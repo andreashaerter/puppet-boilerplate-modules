@@ -260,7 +260,7 @@ function wizard_step1_boilerplatetype() {
 	local INDEX=0 # init
 	local IFS_SAVE=${IFS} # copy current IFS (Internal Field Separator)
 	IFS=$'\n'
-	for RESOURCE in $(find "${DIR_BOILERPLATES}" -maxdepth 1 -type d -not -name "\.git" | sort)
+	for RESOURCE in $(find "${DIR_BOILERPLATES}" -maxdepth 1 -type d -not -name "\.git" -not -name "\.hg" | sort)
 	do
 		# sort-out non-boilerplate directories
 		if [ "${RESOURCE}" == "${DIR_BOILERPLATES}" ] || # containing dir itself
@@ -1383,7 +1383,7 @@ then
 	exit 1
 fi
 echo "'${SOURCEDIR}' -> '${TARGETDIR}'"
-rsync --verbose --recursive --whole-file --exclude=".git" --exclude=".gitignore" --exclude=".gitattributes" "${SOURCEDIR}/." "${TARGETDIR}/."
+rsync --verbose --recursive --whole-file --exclude=".git" --exclude=".gitignore" --exclude=".gitattributes" --exclude=".hg" "${SOURCEDIR}/." "${TARGETDIR}/."
 if [ $? -ne 0 ]
 then
 	echo "Copying to '${TARGETDIR}' failed." 1>&2
@@ -1399,7 +1399,7 @@ echo -e "\033[1mRenaming directories...\033[0m"
 TOUCHED=false
 IFS_SAVE=${IFS} # copy current IFS (Internal Field Separator)
 IFS=$'\n'
-for RESOURCE in $(find "${TARGETDIR}" -type d -not -name "\.git" | grep "${STR_PLACEHOLDER_BOILERPLATE}" | sort)
+for RESOURCE in $(find "${TARGETDIR}" -type d -not -name "\.git" -not -name "\.hg" | grep "${STR_PLACEHOLDER_BOILERPLATE}" | sort)
 do
 	# get some data
 	RESOURCE_DIR=$(dirname ${RESOURCE})
@@ -1444,7 +1444,7 @@ echo -e "\033[1mRenaming files...\033[0m"
 TOUCHED=false
 IFS_SAVE=${IFS} # copy current IFS (Internal Field Separator)
 IFS=$'\n'
-for RESOURCE in $(find "${TARGETDIR}" -type f -not -name "\.git" | grep "${STR_PLACEHOLDER_BOILERPLATE}" | sort)
+for RESOURCE in $(find "${TARGETDIR}" -type f -not -wholename "*\/\.git\/*" -not -wholename "*\/\.hg\/*" | grep "${STR_PLACEHOLDER_BOILERPLATE}" | sort)
 do
 	# get some data
 	RESOURCE_DIR=$(dirname ${RESOURCE})
