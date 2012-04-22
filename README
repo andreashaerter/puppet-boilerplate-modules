@@ -1,0 +1,43 @@
+
+  I. About
+
+    This project helps you to create high quality Puppet modules in a fast and
+    comfortable way. Main targets are to boost your efficiency and Puppet code
+    quality. Use it if you want to get Puppet module skeletons with:
+
+    * tidy and easily extendable structure
+    * good documentation
+    * source code which follows the official style guide[1]
+    * parameterized classes[2]
+
+    Just call the "new module wizard", answer the questions and start editing.
+
+    [1] <http://docs.puppetlabs.com/guides/style_guide.html>
+    [2] <http://docs.puppetlabs.com/guides/parameterized_classes.html>
+
+
+
+  II. Usage
+
+    1. Clone the repository:
+       $ git clone git://github.com/bitkollektiv/puppet-boilerplate-modules.git
+
+    2. Call the wizard to create the module skeleton for a new module:
+       $ ./puppet-boilerplate-modules/newmodule.sh
+       You can provide the answers by using parameters. Use "newmodule.sh -h" to
+       get a listing.
+
+    3. ???
+
+    4. Profit!!!
+
+
+
+  III. Other notes
+
+    If you like this project, you might buy us a coffee[1]. Or get some of our
+    cool QR Code stuff[2]. Thanks. :-)
+
+    [1] <http://bitkollektiv.org/donate/puppet-boilerplate-modules/>
+    [2] <http://goQR.me/>
+
