@@ -856,7 +856,7 @@ function repowizard_step3_credentials() {
 		echo ""
 		echo "Password to authenticate you on the repository hosting service was specified"
 		echo "by parameter."
-		echo "Using '${OPTION_REPOHOSTINGSERVICEPWD}'."
+		echo "Using '(password not shown for security reasons)'."
 		REPOHOSTINGSERVICEPWD=${OPTION_REPOHOSTINGSERVICEPWD}
 	else
 		echo ""
@@ -1292,7 +1292,9 @@ do
 			echo    ""
 			echo -e "  \033[1m-p\033[0m"
 			echo    "     DVCS repository wizard: your password belonging to the username on"
-			echo -e "     the repository hosting service of choice."
+			echo    "     the repository hosting service of choice."
+			echo    "     ATTENTION: Do not use this on multi-user machines! Your password may be"
+			echo    "                listed in the terminal history, current processes listing, ..."
 			echo    ""
 			echo -e "  \033[1m-o\033[0m"
 			echo    "     DVCS repository wizard: GitHub provides organizations. You can use this"
@@ -1641,34 +1643,36 @@ echo -e "\033[32mDone.\033[0m"
 echo ""
 if [ "${REPOHOSTINGSERVICE}" == "github" ]
 then
-	echo "Adding git remote github..."
+	echo "Adding GitHub repository as git remote origin..."
 	if [ "${REPOHOSTINGSERVICEORGANIZATION}" == "" ]
 	then
-		git --git-dir="${TARGETDIR}/.git" --work-tree="${TARGETDIR}" remote add github "git@github.com:${REPOHOSTINGSERVICEUSERNAME}/${REPOHOSTINGSERVICEPROJECTNAME}.git" > /dev/null 2>&1
+		git --git-dir="${TARGETDIR}/.git" --work-tree="${TARGETDIR}" remote add origin "git@github.com:${REPOHOSTINGSERVICEUSERNAME}/${REPOHOSTINGSERVICEPROJECTNAME}.git" > /dev/null 2>&1
 	else
-		git --git-dir="${TARGETDIR}/.git" --work-tree="${TARGETDIR}" remote add github "git@github.com:${REPOHOSTINGSERVICEORGANIZATION}/${REPOHOSTINGSERVICEPROJECTNAME}.git" > /dev/null 2>&1
+		git --git-dir="${TARGETDIR}/.git" --work-tree="${TARGETDIR}" remote add origin "git@github.com:${REPOHOSTINGSERVICEORGANIZATION}/${REPOHOSTINGSERVICEPROJECTNAME}.git" > /dev/null 2>&1
 	fi
 	if [ $? -ne 0 ]
 	then
-		echo "'git remote add github' failed for '${TARGETDIR}'!" 1>&2
+		echo "'git remote add origin' failed for '${TARGETDIR}'!" 1>&2
 		echo "However, your new Puppet module should be OK. Just configure git remote" 1>&2
 		echo "by hand. Or delete everything and re-start the module creation." 1>&2
 		echo ""
 		exit 1
 	fi
+	echo "You may want to use 'git push -u origin master' after your first commit."
 	echo -e "\033[32mDone.\033[0m"
 elif [ "${REPOHOSTINGSERVICE}" == "bitbucket" ]
 then
-	echo "Adding git remote bitbucket..."
-	git --git-dir="${TARGETDIR}/.git" --work-tree="${TARGETDIR}" remote add bitbucket "git@bitbucket.org:${REPOHOSTINGSERVICEUSERNAME}/${REPOHOSTINGSERVICEPROJECTNAME}.git" > /dev/null 2>&1
+	echo "Adding Bitbucket repository as git remote origin..."
+	git --git-dir="${TARGETDIR}/.git" --work-tree="${TARGETDIR}" remote add origin "git@bitbucket.org:${REPOHOSTINGSERVICEUSERNAME}/${REPOHOSTINGSERVICEPROJECTNAME}.git" > /dev/null 2>&1
 	if [ $? -ne 0 ]
 	then
-		echo "'git remote add bitbucket' failed for '${TARGETDIR}'!" 1>&2
+		echo "'git remote add origin' failed for '${TARGETDIR}'!" 1>&2
 		echo "However, your new Puppet module should be OK. Just configure git remote" 1>&2
 		echo "by hand. Or delete everything and re-start the module creation." 1>&2
 		echo ""
 		exit 1
 	fi
+	echo "You may want to use 'git push -u origin master' after your first commit."
 	echo -e "\033[32mDone.\033[0m"
 else
 	echo "'${REPOHOSTINGSERVICE}' is an unknown service." 1>&2
