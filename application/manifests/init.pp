@@ -38,14 +38,6 @@
 #   Excessive usage of this feature is not recommended in order to keep node
 #   definitions and class dependencies maintainable. Defaults to <tt>false</tt>.
 #
-# [*package*]
-#   The default value to define which packages are managed by this module gets
-#   set in boilerplate::params. This parameter is able to overwrite the default.
-#   Just specify your own package list as a {Puppet array}[http://j.mp/wzu7L3].
-#   However, usage of this feature is <b>not recommended</b> in order to keep
-#   the node definitions maintainable. It exists for <b>exceptional cases
-#   only</b>.
-#
 # [*debug*]
 #   Boolean switch to control the debugging functionality of this module. If set
 #   to <tt>true</tt>:
@@ -79,11 +71,6 @@
 #       ensure => 'absent',
 #     }
 #
-# * Installation with alternative package list:
-#     class { 'boilerplate':
-#       package => [ "foo", "bar-1.2.3" ],
-#     }
-#
 # * Run installation with enabled debugging:
 #     class { 'boilerplate':
 #       debug => true,
@@ -98,7 +85,6 @@ class boilerplate(
   $ensure         = $boilerplate::params::ensure,
   $autoupgrade    = $boilerplate::params::autoupgrade,
   $autoload_class = $boilerplate::params::autoload_class,
-  $package        = $boilerplate::params::package,
   $debug          = $boilerplate::params::debug
 ) inherits boilerplate::params {
 
@@ -120,11 +106,6 @@ class boilerplate(
     if $autoload_class !~ /^[a-z](?:[a-z0-9_]*(?:\:\:)*[a-z0-9_]*){1,}[a-z0-9_]{1}$/ { # Cf. naming rules: http://j.mp/xuM3Rr and http://j.mp/wZ8quk
       warning("\"${autoload_class}\" violates class naming restrictions.")
     }
-  }
-
-  # package list
-  if !is_array($package) or empty($package) {
-    fail('"package" must be an array of package names, containing at least one element.')
   }
 
   # debug
