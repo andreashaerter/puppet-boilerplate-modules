@@ -58,20 +58,7 @@ class boilerplate::params {
   # autoload_class
   $autoload_class = false
 
-  # debug
-  $debug = false
-
-
-
-  #### Internal module parameters
-
-  # NOTE: The following variables are internal values the user cannot set as
-  #       parameter of the main module class. This means:
-  #       - Use $boilerplate::params::foobar.
-  #       - Do not use $boilerplate::foobar.
-  #       This makes clear that you are using an internal module parameter.
-
-  # packages
+  # package list
   case $::operatingsystem {
     'CentOS', 'Fedora', 'Scientific': {
       $package = [ 'FIXME/TODO' ]
@@ -84,6 +71,19 @@ class boilerplate::params {
       fail("\"${module_name}\" is not supported on \"${::operatingsystem}\".")
     }
   }
+
+  # debug
+  $debug = false
+
+
+
+  #### Internal module parameters
+
+  # NOTE: The following variables are internal values the user cannot set as
+  #       parameter of the main module class. This means:
+  #       - Use $boilerplate::params::foobar.
+  #       - Do not use $boilerplate::foobar.
+  #       This makes clear that you are using an internal module parameter.
 
   # service parameters (q.v. http://j.mp/q6J073)
   case $::operatingsystem {

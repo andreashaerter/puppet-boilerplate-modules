@@ -52,7 +52,7 @@ class boilerplate::package {
   }
 
   # action
-  package { $boilerplate::params::package:
+  package { $boilerplate::package:
     ensure => $package_ensure,
   }
 

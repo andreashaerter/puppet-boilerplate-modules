@@ -55,6 +55,20 @@ class boilerplate::params {
   # autoload_class
   $autoload_class = false
 
+  # package list
+  case $::operatingsystem {
+    'CentOS', 'Fedora', 'Scientific': {
+      $package = [ 'FIXME/TODO' ]
+    }
+    'Debian', 'Ubuntu': {
+      $package = [ 'FIXME/TODO' ]
+    }
+    # given OS is unknown (see http://j.mp/x6Mtba for a list of known values)
+    default: {
+      fail("\"${module_name}\" is not supported on \"${::operatingsystem}\".")
+    }
+  }
+
   # debug
   $debug = false
 
@@ -68,18 +82,6 @@ class boilerplate::params {
   #       - Do not use $boilerplate::foobar.
   #       This makes clear that you are using an internal module parameter.
 
-  # packages
-  case $::operatingsystem {
-    'CentOS', 'Fedora', 'Scientific': {
-      $package = [ 'FIXME/TODO' ]
-    }
-    'Debian', 'Ubuntu': {
-      $package = [ 'FIXME/TODO' ]
-    }
-    # given OS is unknown (see http://j.mp/x6Mtba for a list of known values)
-    default: {
-      fail("\"${module_name}\" is not supported on \"${::operatingsystem}\".")
-    }
-  }
+  # nothing right now
 
 }
