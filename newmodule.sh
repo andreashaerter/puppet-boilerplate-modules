@@ -1399,7 +1399,7 @@ then
 	exit 1
 fi
 echo "'${SOURCEDIR}' -> '${TARGETDIR}'"
-rsync --verbose --recursive --whole-file --exclude=".git" --exclude=".gitignore" --exclude=".gitattributes" --exclude=".hg" "${SOURCEDIR}/." "${TARGETDIR}/."
+rsync --verbose --recursive --whole-file --exclude="DESCRIPTION" --exclude=".git" --exclude=".gitignore" --exclude=".gitattributes" --exclude=".hg" "${SOURCEDIR}/." "${TARGETDIR}/."
 if [ $? -ne 0 ]
 then
 	echo "Copying to '${TARGETDIR}' failed." 1>&2

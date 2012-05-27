@@ -1,0 +1,7 @@
+- Skeleton for modules to install/remove/configure services.
+- Many inline comments helping new users to understand what is going on.
+- Separate manifests to group the code and actions into logical units:
+    config.pp, package.pp, repo.pp, service.pp
+- Notable parameters:
+    autoload_class, package (extensive customization)
+    debug (enables you to dump var values)
