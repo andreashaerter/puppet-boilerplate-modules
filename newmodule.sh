@@ -271,8 +271,22 @@ function wizard_step1_boilerplatetype() {
 
 		# show
 		local BASENAME=$(basename "${RESOURCE}")
-		echo -n "- ${INDEX}: "
-		echo "${BASENAME}"
+		echo -e "  \033[1m${INDEX}: ${BASENAME}\033[0m"
+		if [ -f "${RESOURCE}/DESCRIPTION" ]
+		then
+			for LINE in $(cat "${RESOURCE}/DESCRIPTION")
+			do
+				if [ ${INDEX} -lt 10 ]
+				then
+					echo -n "     "
+				else
+					echo -n "      "
+				fi
+				echo ${LINE}
+			done
+			unset LINE
+		fi
+		echo ""
 
 		# pre-select boilerplate if parameter was specified
 		if [ "${OPTION_BOILERPLATE}" == "${BASENAME}" ]

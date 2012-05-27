@@ -42,14 +42,18 @@
 
     1. Create a directory for the new boilerplate (name: [a-zA-Z0-9-_] only).
 
-    2. Add everything your boilerplate needs. Please note that all files have
+    2. Optional but recommended: put a DESCRIPTION file into the boilerplate's
+       root dir. The newmodule.sh will show the file content when listing the
+       available boilerplates as description then.
+
+    3. Add everything your boilerplate needs. Please note that all files have
        to be UTF-8 encoded so take care your editor can handle UTF-8.
 
-    3. The newmodule.sh executes different actions when creating a new skeleton.
+    4. The newmodule.sh executes different actions when creating a new skeleton.
        It copies the chosen boilerplate to the specified target dir, renames
        files/dirs and does some string replacements to create a useful module
        skeleton. You can use placeholders for your new boilerplate and
-       and newmodule.sh inserts the real data it asked the user for:
+       newmodule.sh inserts the real data it asked the user for.
 
        - The following case sensitive string replacements will be done in every
          file of your boilerplate:
