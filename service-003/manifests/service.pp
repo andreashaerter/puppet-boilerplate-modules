@@ -27,6 +27,7 @@
 # * John Doe <mailto:john.doe@example.com>
 #
 class boilerplate::service {
+
   #### Service management
 
   # set params: in operation
