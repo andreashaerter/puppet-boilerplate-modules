@@ -8,8 +8,8 @@
 # === Parameters
 #
 # [*ensure*]
-#   String. Controls if the resources managed by this module shall be
-#   <tt>present</tt> or <tt>absent</tt>. If set to <tt>absent</tt>:
+#   String. Controls if the managed resources shall be <tt>present</tt> or
+#   <tt>absent</tt>. If set to <tt>absent</tt>:
 #   * The managed software packages are being uninstalled.
 #   * Any traces of the packages will be purged as good as possible. This may
 #     include existing configuration files. The exact behavior is provider
@@ -106,7 +106,7 @@ class boilerplate(
 
   # ensure
   if ! ($ensure in [ 'present', 'absent' ]) {
-    fail("\"${ensure}\" is not a valid ensure value.")
+    fail("\"${ensure}\" is not a valid ensure parameter value")
   }
 
   # autoupgrade
@@ -115,16 +115,16 @@ class boilerplate(
   # autoload_class
   if $autoload_class != false {
     if !is_string($autoload_class) or empty($autoload_class) {
-      fail('"autoload_class" must be a valid class name or false.')
+      fail('"autoload_class" must be a valid class name or false')
     }
     if $autoload_class !~ /^[a-z](?:[a-z0-9_]*(?:\:\:)*[a-z0-9_]*){1,}[a-z0-9_]{1}$/ { # Cf. naming rules: http://j.mp/xuM3Rr and http://j.mp/wZ8quk
-      warning("\"${autoload_class}\" violates class naming restrictions.")
+      warning("\"${autoload_class}\" violates class naming restrictions")
     }
   }
 
   # package list
   if !is_array($package) or empty($package) {
-    fail('"package" must be an array of package names, containing at least one element.')
+    fail('"package" parameter must be an array of package names, containing at least one element')
   }
 
   # debug

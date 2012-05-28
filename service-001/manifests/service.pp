@@ -57,7 +57,7 @@ class boilerplate::service {
       # note: don't forget to update the parameter check in init.pp if you
       #       add a new or change an existing status.
       default: {
-        fail("\"${boilerplate::status}\" is not a valid status value.")
+        fail("\"${boilerplate::status}\" is an unknown service status value")
       }
     }
 

@@ -29,7 +29,7 @@ class boilerplate::package {
   # set params: in operation
   if $boilerplate::ensure == 'present' {
 
-    # Install all managed packages if not present. Present packages are getting
+    # Install managed packages if not present. Present packages are getting
     # upgraded by using 'latest' if there is a newer version than the present
     # one and the corresponding variable evaluates to true. The exact 'latest'
     # behavior is provider dependent. Q.v.:
@@ -43,7 +43,7 @@ class boilerplate::package {
   # set params: removal
   } else {
 
-    # Remove/purge all managed packages and their configuration files. The
+    # Remove/purge managed packages and their configuration files. The
     # exact 'purged' behavior is provider dependent. Q.v.:
     # - Puppet type reference (package, "purgeable"): http://j.mp/xbxmNP
     # - Puppet's package provider source code: http://j.mp/wtVCaL

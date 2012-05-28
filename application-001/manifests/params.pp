@@ -37,14 +37,7 @@
 #
 class boilerplate::params {
 
-  #### Set default values for the parameters of the main module class, init.pp
-
-  # NOTE: Do not access the following variables if there is no specific reason
-  #       to do so. They are defaults for values the user can set. This means:
-  #       - Use $boilerplate::foobar.
-  #       - Do not use $boilerplate::params::foobar.
-  #       Otherwise, you will not get the real parameter value (which may
-  #       contain user defined data) but only the default one in every case.
+  #### Default values for the parameters of the main module class, init.pp
 
   # ensure
   $ensure = 'present'
@@ -55,17 +48,16 @@ class boilerplate::params {
   # autoload_class
   $autoload_class = false
 
-  # package list
-  case $::operatingsystem {
+  # packages
+  case $::operatingsystem { # see http://j.mp/x6Mtba for a list of known values
     'CentOS', 'Fedora', 'Scientific': {
       $package = [ 'FIXME/TODO' ]
     }
     'Debian', 'Ubuntu': {
       $package = [ 'FIXME/TODO' ]
     }
-    # given OS is unknown (see http://j.mp/x6Mtba for a list of known values)
     default: {
-      fail("\"${module_name}\" is not supported on \"${::operatingsystem}\".")
+      fail("\"${module_name}\" provides no package default value for \"${::operatingsystem}\"")
     }
   }
 
@@ -74,13 +66,7 @@ class boilerplate::params {
 
 
 
-  #### Internal module parameters
-
-  # NOTE: The following variables are internal values the user cannot set as
-  #       parameter of the main module class. This means:
-  #       - Use $boilerplate::params::foobar.
-  #       - Do not use $boilerplate::foobar.
-  #       This makes clear that you are using an internal module parameter.
+  #### Internal module values
 
   # nothing right now
 
