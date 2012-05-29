@@ -1,0 +1,3 @@
+- Skeleton for modules to install/remove/configure applications.
+- Separate manifests to group the code and actions into logical units:
+    config.pp, package.pp, repo.pp

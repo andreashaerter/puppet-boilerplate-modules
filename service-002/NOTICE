@@ -1,0 +1,18 @@
+
+  NOTE: Any derivative works that you distribute must include a readable copy of
+        the attribution notices contained in this file (cf. Apache License 2.0;
+        § 4.4).
+
+
+
+  I. Andreas Haerter <ah@bitkollektiv.org>
+     Andreas Wolf <aw@bitkollektiv.org>
+
+    This Puppet module is based on the work of Bitkollektiv [1]. If you like
+    their projects, you might buy them a coffee [2], or get some cool QR Code
+    merchandise [3]. Thank you! :-)
+
+    [1] <http://bitkollektiv.org/>
+    [2] <http://bitkollektiv.org/donate/puppet-modules/>
+    [3] <http://goqr.me/>
+

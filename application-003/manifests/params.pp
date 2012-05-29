@@ -1,19 +1,11 @@
 # == Class: boilerplate::params
 #
-# Sets the default values for the parameters of the main module class (see
-# <tt>init.pp</tt>) and manages internal module variables.
-#
 # This class exists to
-# 1. Declutter the default value assignment for the parameters of the main
-#    module class.
+# 1. Declutter the default value assignment for class parameters.
 # 2. Manage internally used module variables in a central place.
 #
 # Therefore, many operating system dependent differences (names, paths, ...)
 # are addressed in here.
-#
-# Have a look at the corresponding <tt>init.pp</tt> manifest file if you need
-# more technical information about how the values of this class are used as
-# parameter defaults for the main module class.
 #
 #
 # === Parameters

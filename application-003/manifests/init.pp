@@ -132,7 +132,7 @@ class boilerplate(
 
 
 
-  #### Manage module actions
+  #### Manage actions
 
   # repository
   class { 'boilerplate::repo': }     # FIXME/TODO: Remove this declaration or this comment. See "repo.pp" for more information.
@@ -150,7 +150,7 @@ class boilerplate(
 
 
 
-  #### Manage basic relationships    # FIXME/TODO: Remove the whole relationships block if not needed
+  #### Manage relationships          # FIXME/TODO: Remove the whole relationships block if not needed
 
   if $ensure == 'present' {
     # we need working repositories before installing packages

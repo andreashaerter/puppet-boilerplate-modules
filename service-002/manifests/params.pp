@@ -40,11 +40,12 @@ class boilerplate::params {
   # service status
   $status = 'enabled'
 
-  # autoload_class
-  $autoload_class = false
+
+
+  #### Internal module values
 
   # packages
-  case $::operatingsystem { # see http://j.mp/x6Mtba for a list of known values
+  case $::operatingsystem {
     'CentOS', 'Fedora', 'Scientific': {
       $package = [ 'FIXME/TODO' ]
     }
@@ -56,26 +57,19 @@ class boilerplate::params {
     }
   }
 
-  # debug
-  $debug = false
-
-
-
-  #### Internal module values
-
-  # service parameters (q.v. http://j.mp/q6J073)
-  case $::operatingsystem { # see http://j.mp/x6Mtba for a list of known values
+  # service parameters
+  case $::operatingsystem {
     'CentOS', 'Fedora', 'Scientific': {
       $service_name       = 'FIXME/TODO'
       $service_hasrestart = true
       $service_hasstatus  = true
-      $service_pattern    = $service_name # string or any legal Ruby pattern
+      $service_pattern    = $service_name
     }
     'Debian', 'Ubuntu': {
       $service_name       = 'FIXME/TODO'
       $service_hasrestart = true
       $service_hasstatus  = true
-      $service_pattern    = $service_name # string or any legal Ruby pattern
+      $service_pattern    = $service_name
     }
     default: {
       fail("\"${module_name}\" provides no service parameters for \"${::operatingsystem}\"")
