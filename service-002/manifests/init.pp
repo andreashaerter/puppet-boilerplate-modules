@@ -109,11 +109,6 @@ class boilerplate(
   # service(s)
   class { 'boilerplate::service': }
 
-  # automatically load/include custom class if needed
-  if $autoload_class != false {
-    class { $autoload_class: }
-  }
-
 
 
   #### Manage relationships

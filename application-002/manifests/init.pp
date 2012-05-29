@@ -78,11 +78,6 @@ class boilerplate(
   # configuration
   class { 'boilerplate::config': }   # FIXME/TODO: Remove this declaration or this comment. See "config.pp" for more information.
 
-  # automatically load/include custom class if needed
-  if $autoload_class != false {
-    class { $autoload_class: }
-  }
-
 
 
   #### Manage relationships          # FIXME/TODO: Remove the whole relationships block if not needed
