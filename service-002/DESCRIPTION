@@ -1,3 +1,2 @@
-- Skeleton for modules to install/remove/configure services.
-- Separate manifests to group the code and actions into logical units:
-    config.pp, package.pp, repo.pp, service.pp
+Very much like service-001 but with separate manifests for
+configuration and repository management (config.pp, repo.pp).

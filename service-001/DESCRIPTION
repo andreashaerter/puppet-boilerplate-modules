@@ -1,3 +1,2 @@
-- Skeleton for modules to install/remove/configure services.
-- Very clean and basic, ideal for managing software which is available in
-  default repositories and/or without the need for further configuration.
+Clean and basic. Without separate manifests for config and repository
+management. Ideal for software which is available in default distro repos.

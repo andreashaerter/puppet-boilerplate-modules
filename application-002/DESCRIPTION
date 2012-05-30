@@ -1,3 +1,2 @@
-- Skeleton for modules to install/remove/configure applications.
-- Separate manifests to group the code and actions into logical units:
-    config.pp, package.pp, repo.pp
+Very much like application-001 but with separate manifests for
+configuration and repository management (config.pp, repo.pp).

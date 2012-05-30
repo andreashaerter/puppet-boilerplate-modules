@@ -1,7 +1,3 @@
-- Skeleton for modules to install/remove/configure applications.
-- Many inline comments helping new users to understand what is going on.
-- Separate manifests to group the code and actions into logical units:
-    config.pp, package.pp, repo.pp
-- Notable parameters:
-    autoload_class, package (extensive customization)
-    debug (enables you to dump var values)
+Many inline comments, separate manifests for configuration and repository
+management (config.pp, repo.pp), parameters for extensive customization
+(autoload_class, package), debug functionality.

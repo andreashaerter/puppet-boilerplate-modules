@@ -324,13 +324,13 @@ function wizard_step1_boilerplatetype() {
 		echo -n "Using "
 		basename "${LIST[${CHOICE}]}"
 	else
-		echo ""
 		if [ "${OPTION_BOILERPLATE}" != "" ] &&
 		   [ "${CHOICE}" == "none" ]
 		then
 			OPTION_BOILERPLATE=""
 			echo "-b: invalid value, ignoring it." 1>&2
 		fi
+		echo "See http://j.mp/JVPxKL for example modules based on the different boilerplates."
 		echo -n "Number identifying the boilerplate to use? "
 		read CHOICE
 		local CHOICE_OK=false
