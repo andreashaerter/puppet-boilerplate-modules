@@ -11,9 +11,12 @@
     - parameterized classes [2]
 
     Just call the "new module wizard", answer the questions and start editing.
+    If you want to get an impression of what to expect, you may have a look at
+    the "puppet-boilerplate-modules-example-content" [3] repository.
 
     [1] <http://docs.puppetlabs.com/guides/style_guide.html>
     [2] <http://docs.puppetlabs.com/guides/parameterized_classes.html>
+    [3] <http://j.mp/JVPxKL>
 
 
 
@@ -30,6 +33,12 @@
     3. ???
 
     4. Profit!!!
+
+    The "puppet-boilerplate-modules-example-content" [1] repository is your if
+    you need more help. It provides example modules including detailed creation
+    transcripts.
+
+    [1] <http://j.mp/JVPxKL>
 
 
 
