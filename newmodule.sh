@@ -126,7 +126,10 @@ function str_rreplace() {
 		done
 		unset RESOURCE
 		# check if we found something useful...
-		if [[ ! "${LANG}" == *"utf8" ]]
+		if [[ ! "${LANG}" == *"utf8" ]] &&
+		   [[ ! "${LANG}" == *"UTF8" ]] &&
+		   [[ ! "${LANG}" == *"utf-8" ]] &&
+		   [[ ! "${LANG}" == *"UTF-8" ]]
 		then
 			LANG=${LANG_SAVE} # restore LANG
 			echo "Current locale is not UTF-8 aware: '${LANG}'" 1>&2
