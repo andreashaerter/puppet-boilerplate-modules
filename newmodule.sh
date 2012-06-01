@@ -105,10 +105,20 @@ function str_rreplace() {
 		do
 			LANG=${RESOURCE}
 			# use it and break loop if a "favorite" (=tested) locale is present
-			if [ "${RESOURCE}" == "de_CH.utf8" ] ||
-			   [ "${RESOURCE}" == "de_DE.utf8" ] ||
-			   [ "${RESOURCE}" == "en_GB.utf8" ] ||
-			   [ "${RESOURCE}" == "en_US.utf8" ]
+			if [ "${RESOURCE}" == "de_CH.utf8" ] || # Linux
+			   [ "${RESOURCE}" == "de_DE.utf8" ] || # Linux
+			   [ "${RESOURCE}" == "en_GB.utf8" ] || # Linux
+			   [ "${RESOURCE}" == "en_NZ.utf8" ] || # Linux
+			   [ "${RESOURCE}" == "en_US.utf8" ] || # Linux
+			   [ "${RESOURCE}" == "de_AT.UTF-8" ] || # Mac OS
+			   [ "${RESOURCE}" == "de_CH.UTF-8" ] || # Mac OS
+			   [ "${RESOURCE}" == "de_DE.UTF-8" ] || # Mac OS
+			   [ "${RESOURCE}" == "en_AU.UTF-8" ] || # Mac OS
+			   [ "${RESOURCE}" == "en_CA.UTF-8" ] || # Mac OS
+			   [ "${RESOURCE}" == "en_GB.UTF-8" ] || # Mac OS
+			   [ "${RESOURCE}" == "en_IE.UTF-8" ] || # Mac OS
+			   [ "${RESOURCE}" == "en_NZ.UTF-8" ] || # Mac OS
+			   [ "${RESOURCE}" == "en_US.UTF-8" ]    # Mac OS
 			then
 				LANG=${RESOURCE}
 				break
