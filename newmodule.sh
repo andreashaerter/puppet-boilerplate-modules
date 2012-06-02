@@ -149,7 +149,13 @@ function str_rreplace() {
 	IFS=$'\n'
 	for RESOURCE in $(grep -R "${SEARCH}" "${DIR}" | cut -d ":" -f 1 -s | sort | uniq)
 	do
-		sed -i "s/${SEARCH}/${REPLACE}/g" "${RESOURCE}"
+		if [[ "${OSTYPE}" == *"darwin"* ]] || # Mac OS is using BSD sed
+		   [[ "${OSTYPE}" == *"freebsd"* ]]
+		then
+			sed -i "" -e "s/${SEARCH}/${REPLACE}/g" "${RESOURCE}" # BSD style
+		else
+			sed -i -e "s/${SEARCH}/${REPLACE}/g" "${RESOURCE}" # GNU style
+		fi
 		if [ $? -ne 0 ]
 		then
 			echo "Replacing '${SEARCH}' with '${REPLACE}' in '${RESOURCE}' failed." 1>&2
@@ -349,9 +355,9 @@ function wizard_step1_boilerplatetype() {
 		local CHOICE_OK=false
 		while [ ${CHOICE_OK} != true ]
 		do
-			if [ "${LIST[${CHOICE}]}" == "" ] ||
-			   [ "${CHOICE}" == "" ] ||
-			   [[ ! "${CHOICE}" =~ ^[0-9]*$ ]]
+			if [ "${CHOICE}" == "" ] ||
+			   [[ ! "${CHOICE}" =~ ^[0-9]*$ ]] ||
+			   [ "${LIST[${CHOICE}]}" == "" ]
 			then
 				echo -n "Invalid, try again: "
 				read CHOICE
