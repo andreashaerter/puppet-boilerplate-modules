@@ -98,7 +98,10 @@ function str_rreplace() {
 	# done to prevent issues regarding the sed plus grep commands and the UTF-8
 	# encoded files we are going to work with. Q.v. <http://j.mp/GgQMV>.
 	local LANG_SAVE=${LANG} # copy current locale LANG value.
-	if [[ ! "${LANG}" == *"utf8" ]] # check if current locale is UTF-8 aware
+	if [[ ! "${LANG}" == *"utf8" ]] && # check if current locale is UTF-8 aware
+	   [[ ! "${LANG}" == *"UTF8" ]] &&
+	   [[ ! "${LANG}" == *"utf-8" ]] &&
+	   [[ ! "${LANG}" == *"UTF-8" ]]
 	then
 		# search for an alternative...
 		for RESOURCE in $(locale -a | grep "\.utf8$" | egrep "^(en|de|es|fr)_*" | sort)
