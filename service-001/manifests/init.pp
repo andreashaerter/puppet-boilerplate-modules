@@ -73,9 +73,9 @@
 # * John Doe <mailto:john.doe@example.com>
 #
 class boilerplate(
-  $ensure         = $boilerplate::params::ensure,
-  $autoupgrade    = $boilerplate::params::autoupgrade,
-  $status         = $boilerplate::params::status
+  $ensure      = $boilerplate::params::ensure,
+  $autoupgrade = $boilerplate::params::autoupgrade,
+  $status      = $boilerplate::params::status
 ) inherits boilerplate::params {
 
   #### Validate parameters
