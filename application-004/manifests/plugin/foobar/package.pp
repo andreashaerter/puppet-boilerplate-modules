@@ -1,5 +1,8 @@
 # == Class: boilerplate::plugin::foobar::package
 #
+# FIXME/TODO Replace all occurrences of "foobar" with the name of the plugin you
+#            want to manage.
+#
 # This class exists to coordinate all software package management related
 # actions, functionality and logical units in a central place.
 #
