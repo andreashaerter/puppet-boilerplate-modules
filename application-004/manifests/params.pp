@@ -39,7 +39,7 @@ class boilerplate::params {
 
 
 
-  #### Default values for the parameters of the plugin::foobar class,
+  #### Default values for the parameters of the plugin::foobar class,    # FIXME/TODO: Replace "foobar" with the name of the plugin you you want to manage (all occurrences at the following 8 lines)
   #### plugin/foobar.pp
 
   # ensure

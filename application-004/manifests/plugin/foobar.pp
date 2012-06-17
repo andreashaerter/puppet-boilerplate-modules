@@ -1,5 +1,11 @@
 # == Class: boilerplate::plugin::foobar
 #
+# FIXME/TODO Replace "foobar" with the name of the plugin you want to manage.
+#            Dont' forget to update the class default parameter declaration
+#            params.pp afterwards (the relevant parts are marked with
+#            "FIXME/TODO" comments). Rename this file and the /plugin/foobar/
+#            directory then.
+#
 # FIXME/TODO If the application's nomenclature does not call optional components
 #            "plugin" but e.g. "extension", you may want to do the following
 #            search and replace operations on all files of the module:
