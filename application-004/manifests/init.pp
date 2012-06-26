@@ -73,4 +73,3 @@ class boilerplate(
   class { 'boilerplate::package': }
 
 }
-

@@ -109,4 +109,3 @@ class boilerplate::plugin::foobar(
   }
 
 }
-
