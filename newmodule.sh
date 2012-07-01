@@ -623,9 +623,15 @@ function repowizard_start() {
 		echo -e "\033[1mUsername:\033[0m"
 		echo "${REPOHOSTINGSERVICEUSERNAME} (password not shown for security reasons)"
 		echo ""
-		if [ "${REPOHOSTINGSERVICE}" == "github" ]
+		if [ "${REPOHOSTINGSERVICE}" == "github" ] ||
+		   [ "${REPOHOSTINGSERVICE}" == "bitbucket" ]
 		then
-			echo -e "\033[1mOrganization:\033[0m"
+			if [ "${REPOHOSTINGSERVICE}" == "github" ]
+			then
+				echo -e "\033[1mOrganization:\033[0m"
+			else
+				echo -e "\033[1mTeam:\033[0m"
+			fi
 			if [ "${REPOHOSTINGSERVICEORGANIZATION}" == "" ]
 			then
 				echo "(none)"
@@ -677,9 +683,15 @@ function repowizard_start() {
 			echo -e "\033[1mUsername:\033[0m"
 			echo "${REPOHOSTINGSERVICEUSERNAME} (password not shown for security reasons)"
 			echo ""
-			if [ "${REPOHOSTINGSERVICE}" == "github" ]
+			if [ "${REPOHOSTINGSERVICE}" == "github" ] ||
+			   [ "${REPOHOSTINGSERVICE}" == "bitbucket" ]
 			then
-				echo -e "\033[1mOrganization:\033[0m"
+				if [ "${REPOHOSTINGSERVICE}" == "github" ]
+				then
+					echo -e "\033[1mOrganization:\033[0m"
+				else
+					echo -e "\033[1mTeam:\033[0m"
+				fi
 				if [ "${REPOHOSTINGSERVICEORGANIZATION}" == "" ]
 				then
 					echo "(none)"
@@ -927,7 +939,7 @@ function repowizard_step3_credentials() {
 		if [ "${OPTION_REPOHOSTINGSERVICEORGANIZATION}" != "" ]
 		then
 			echo ""
-			echo "Organization your user belongs to was specified by parameter."
+			echo "GitHub Organization your user belongs to was specified by parameter."
 			echo "Using '${OPTION_REPOHOSTINGSERVICEORGANIZATION}'."
 			REPOHOSTINGSERVICEORGANIZATION=${OPTION_REPOHOSTINGSERVICEORGANIZATION}
 		else
@@ -938,6 +950,38 @@ function repowizard_step3_credentials() {
 			echo "for none."
 			echo ""
 			echo -n "Please enter the GitHub organization (press [ENTER] if none): "
+			read REPOHOSTINGSERVICEORGANIZATION
+			local REPOHOSTINGSERVICEORGANIZATION_OK=false
+			while [ ${REPOHOSTINGSERVICEORGANIZATION_OK} != true ]
+			do
+				if [[ ! "${REPOHOSTINGSERVICEORGANIZATION}" =~ ^[a-zA-Z][a-zA-Z0-9\-]*$ ]] && # don't forget to update the parameter check if you change something here!
+				   [ "${REPOHOSTINGSERVICEORGANIZATION}" != "" ]
+				then
+					echo -n "Invalid, try again: "
+					read REPOHOSTINGSERVICEORGANIZATION
+					continue 1
+				else
+					local REPOHOSTINGSERVICEORGANIZATION_OK=true
+					break 1
+				fi
+			done
+		fi
+	elif [ "${REPOHOSTINGSERVICE}" == "bitbucket" ]
+	then
+		if [ "${OPTION_REPOHOSTINGSERVICEORGANIZATION}" != "" ]
+		then
+			echo ""
+			echo "Bitbucket Team your user belongs to was specified by parameter."
+			echo "Using '${OPTION_REPOHOSTINGSERVICEORGANIZATION}'."
+			REPOHOSTINGSERVICEORGANIZATION=${OPTION_REPOHOSTINGSERVICEORGANIZATION}
+		else
+			echo ""
+			echo "Bitbucket provides teams (see http://j.mp/LHiSK9 for information). If"
+			echo "you want to create the new repository in the teams's account instead"
+			echo "of your personal one, you can enter the team name here. Leave blank"
+			echo "for none."
+			echo ""
+			echo -n "Please enter the Bitbucket team (press [ENTER] if none): "
 			read REPOHOSTINGSERVICEORGANIZATION
 			local REPOHOSTINGSERVICEORGANIZATION_OK=false
 			while [ ${REPOHOSTINGSERVICEORGANIZATION_OK} != true ]
@@ -1100,6 +1144,7 @@ function bitbucket_createrepo() {
 	local PARAM_ISSUES="false"
 	local PARAM_WIKI="false"
 	local PARAM_SCM="git"
+	local PARAM_OWNER="${REPOHOSTINGSERVICEORGANIZATION}"
 
 	# adjust some parameters
 	if [ "${REPOHOSTINGSERVICEREPOACCESS}" == "public" ]
@@ -1109,8 +1154,18 @@ function bitbucket_createrepo() {
 
 	# let's go
 	echo ""
-	echo "Creating Bitbucket project: ${REPOHOSTINGSERVICEUSERNAME}/${REPOHOSTINGSERVICEPROJECTNAME}"
-	local RESPONSE=$(curl -# --request POST --user "${REPOHOSTINGSERVICEUSERNAME}:${REPOHOSTINGSERVICEPWD}" --data "name=${PARAM_NAME}" --data "is_private=${PARAM_PRIVATE}" --data "scm=${PARAM_SCM}" --data "description=${PARAM_DESCRIPTION}" --data "has_issues=${PARAM_ISSUES}" --data "has_wiki=${PARAM_WIKI}" ${API_TARGETURL})
+	if [ "${REPOHOSTINGSERVICEORGANIZATION}" == "" ]
+	then
+		echo "Creating Bitbucket project: ${REPOHOSTINGSERVICEUSERNAME}/${REPOHOSTINGSERVICEPROJECTNAME}"
+	else
+		echo "Creating Bitbucket project: ${REPOHOSTINGSERVICEORGANIZATION}/${REPOHOSTINGSERVICEPROJECTNAME}"
+	fi
+	if [ "${REPOHOSTINGSERVICEORGANIZATION}" == "" ]
+	then
+		local RESPONSE=$(curl -# --request POST --user "${REPOHOSTINGSERVICEUSERNAME}:${REPOHOSTINGSERVICEPWD}" --data "name=${PARAM_NAME}" --data "is_private=${PARAM_PRIVATE}" --data "scm=${PARAM_SCM}" --data "description=${PARAM_DESCRIPTION}" --data "has_issues=${PARAM_ISSUES}" --data "has_wiki=${PARAM_WIKI}" ${API_TARGETURL})
+	else
+		local RESPONSE=$(curl -# --request POST --user "${REPOHOSTINGSERVICEUSERNAME}:${REPOHOSTINGSERVICEPWD}" --data "name=${PARAM_NAME}" --data "is_private=${PARAM_PRIVATE}" --data "scm=${PARAM_SCM}" --data "description=${PARAM_DESCRIPTION}" --data "has_issues=${PARAM_ISSUES}" --data "has_wiki=${PARAM_WIKI}" --data "owner=${PARAM_OWNER}" ${API_TARGETURL})
+	fi
 
 	if [ $? -eq 7 ] # failed to connect to host.
 	then
@@ -1258,7 +1313,7 @@ do
 			OPTION_REPOHOSTINGSERVICEPWD=${OPTARG}
 			;;
 
-		# DVCS repository hosting service: organisation
+		# DVCS repository hosting service: organization
 		"o")
 			OPTION_REPOHOSTINGSERVICEORGANIZATION=${OPTARG}
 			if [[ ! "${OPTION_REPOHOSTINGSERVICEORGANIZATION}" =~ ^[a-zA-Z][a-zA-Z0-9\-]*$ ]] # don't forget to update the interactive check if you change something here!
@@ -1333,9 +1388,13 @@ do
 			echo    "                listed in the terminal history, current processes listing, ..."
 			echo    ""
 			echo -e "  \033[1m-o\033[0m"
-			echo    "     DVCS repository wizard: GitHub provides organizations. You can use this"
-			echo    "     option if you want to create the repository in the organization's account"
-			echo    "     instead of your personal one."
+			echo    "     DVCS repository wizard: Most services provide some kind of multi-user"
+			echo    "     feature. You can use this option if you want to create the repository"
+			echo    "     in such a multi-user-organization/team account instead of putting the"
+			echo    "     repository in your personal account. Just submit the name of it by using"
+			echo    "     this option. Supported right now:"
+			echo    "     - GitHub organizations"
+			echo    "     - Bitbucket teams"
 			echo    ""
 			echo -e "  \033[1m-q\033[0m"
 			echo    "    DVCS repository wizard: Project name to user for the new repository on"
@@ -1564,7 +1623,7 @@ echo ""
 echo "This program is able to create a new project for your Puppet module on some"
 echo "DVCS hosting services. Currently supported:"
 echo "  - Git repository on GitHub (including GitHub organizations)"
-echo "  - Git repository on Bitbucket"
+echo "  - Git repository on Bitbucket (including Bitbucket teams)"
 echo ""
 echo -n "Start repository hosting service wizard? [y|n]: "
 read INPUT
@@ -1699,7 +1758,12 @@ then
 elif [ "${REPOHOSTINGSERVICE}" == "bitbucket" ]
 then
 	echo "Adding Bitbucket repository as git remote origin..."
-	git --git-dir="${TARGETDIR}/.git" --work-tree="${TARGETDIR}" remote add origin "git@bitbucket.org:${REPOHOSTINGSERVICEUSERNAME}/${REPOHOSTINGSERVICEPROJECTNAME}.git" > /dev/null 2>&1
+	if [ "${REPOHOSTINGSERVICEORGANIZATION}" == "" ]
+	then
+		git --git-dir="${TARGETDIR}/.git" --work-tree="${TARGETDIR}" remote add origin "git@bitbucket.org:${REPOHOSTINGSERVICEUSERNAME}/${REPOHOSTINGSERVICEPROJECTNAME}.git" > /dev/null 2>&1
+	else
+		git --git-dir="${TARGETDIR}/.git" --work-tree="${TARGETDIR}" remote add origin "git@bitbucket.org:${REPOHOSTINGSERVICEORGANIZATION}/${REPOHOSTINGSERVICEPROJECTNAME}.git" > /dev/null 2>&1
+	fi
 	if [ $? -ne 0 ]
 	then
 		echo "'git remote add origin' failed for '${TARGETDIR}'!" 1>&2
