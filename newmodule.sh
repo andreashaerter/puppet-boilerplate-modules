@@ -1236,7 +1236,7 @@ OPTION_REPOHOSTINGSERVICEREPOACCESS=""     # init value of -r
 
 # parse options
 # always helpful: http://rsalveti.wordpress.com/2007/04/03/bash-parsing-arguments-with-getopts/
-OPTIND=1 #set option index to jump over the submitted action which would confuse getopts
+OPTIND=1
 OPTION="" #init loop value
 while getopts ":a:b:e:n:t:s:u:p:o:q:r:h?" OPTION
 do
