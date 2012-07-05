@@ -1434,7 +1434,7 @@ do
 
 		# unknown/not supported -> kill script and inform user
 		*)
-			echo "unknown option '${OPTION}'. Use '-h' or '-?' to get usage instructions." 1>&2
+			echo "unknown option '${OPTARG}'. Use '-h' or '-?' to get usage instructions." 1>&2
 			exit 1
 			;;
 	esac
