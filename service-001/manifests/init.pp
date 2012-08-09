@@ -1,6 +1,7 @@
 # == Class: boilerplate
 #
-# This class is able to install or remove boilerplate on a node.
+# This class is able to install or remove boilerplate on a node. It manages the
+# status of the related service.
 #
 # [Add description - What does this module do on a node?] FIXME/TODO
 #
@@ -54,7 +55,7 @@
 #
 # === Examples
 #
-# * Installation:
+# * Installation, make sure service is running and will be started at boot time:
 #     class { 'boilerplate': }
 #
 # * Removal/decommissioning:
