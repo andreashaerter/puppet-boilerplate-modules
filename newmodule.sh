@@ -1089,7 +1089,7 @@ function github_createrepo() {
 	fi
 	if [ "${REPOHOSTINGSERVICEREPOACCESS}" == "public" ]
 	then
-		local PRIVATE="false"
+		local PARAM_PRIVATE="false"
 	fi
 
 	# let's go
@@ -1149,7 +1149,7 @@ function bitbucket_createrepo() {
 	# adjust some parameters
 	if [ "${REPOHOSTINGSERVICEREPOACCESS}" == "public" ]
 	then
-		local PRIVATE="false"
+		local PARAM_PRIVATE="false"
 	fi
 
 	# let's go
