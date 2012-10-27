@@ -82,7 +82,7 @@ function str_rreplace() {
 		echo "Please place this script in the same directory as the boilerplates." 1>&2
 		return 1
 	fi
-	
+
 	# param: verbose
 	if [ "${4}" == "true" ] # use quotes to prevent errors if undefined
 	then
@@ -104,9 +104,9 @@ function str_rreplace() {
 	   [[ ! "${LANG}" == *"UTF-8" ]]
 	then
 		# search for an alternative...
-		for RESOURCE in $(locale -a | grep "\.utf8$" | egrep "^(en|de|es|fr)_*" | sort)
+		local LANGTMP_OK=false
+		for RESOURCE in $(locale -a | egrep -i "*\.utf-?8$" | egrep "^(en|de|es|fr)_*" | sort)
 		do
-			LANG=${RESOURCE}
 			# use it and break loop if a "favorite" (=tested) locale is present
 			if [ "${RESOURCE}" == "de_CH.utf8" ] || # Linux
 			   [ "${RESOURCE}" == "de_DE.utf8" ] || # Linux
@@ -124,20 +124,19 @@ function str_rreplace() {
 			   [ "${RESOURCE}" == "en_US.UTF-8" ]    # Mac OS
 			then
 				LANG=${RESOURCE}
+				local LANGTMP_OK=true
 				break
 			fi
 		done
 		unset RESOURCE
 		# check if we found something useful...
-		if [[ ! "${LANG}" == *"utf8" ]] &&
-		   [[ ! "${LANG}" == *"UTF8" ]] &&
-		   [[ ! "${LANG}" == *"utf-8" ]] &&
-		   [[ ! "${LANG}" == *"UTF-8" ]]
+		if [ ${LANGTMP_OK} != true ]
 		then
 			LANG=${LANG_SAVE} # restore LANG
 			echo "Current locale is not UTF-8 aware: '${LANG}'" 1>&2
 			return 1
 		fi
+		unset LANGTMP_OK
 	fi
 
 	# inform user
