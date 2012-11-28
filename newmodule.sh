@@ -6,10 +6,10 @@
 # Script to create a useful skeleton to start developing a new Puppet module
 # based on a boilerplate you choose.
 #
-# @author Andreas Haerter <ah@bitkollektiv.org>
-# @copyright 2012, Andreas Haerter
+# @author Andreas Haerter <ah@syn-systems.com>
+# @copyright 2012, SYN Systems GmbH
 # @license Apache License 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
-# @link http://bitkollektiv.org/
+# @link http://syn-systems.com/
 ################################################################################
 
 
@@ -54,7 +54,6 @@ STR_PLACEHOLDER_FIXME="FIXME/TODO"
 # @param boolean Verbose flag. Controls if the function should operate silently
 #        (=false, default) or not (=true).
 # @return integer 0 if everything was fine, 1 if there was an error.
-# @author Andreas Haerter <ah@bitkollektiv.org>
 function str_rreplace() {
 	# allow usage of uninitialized variables
 	set +u
@@ -187,7 +186,6 @@ function str_rreplace() {
 # User data collection wizard
 #
 # @return void
-# @author Andreas Haerter <ah@bitkollektiv.org>
 function wizard_start() {
 	wizard_step1_boilerplatetype
 	wizard_step2_newmodname
@@ -269,7 +267,6 @@ function wizard_start() {
 # wizard_start function.
 #
 # @return integer 0 if everything was fine, 1 if there was an error.
-# @author Andreas Haerter <ah@bitkollektiv.org>
 function wizard_step1_boilerplatetype() {
 	echo ""
 	echo "Please choose the type of boilerplate to use for the new module by typing the"
@@ -387,7 +384,6 @@ function wizard_step1_boilerplatetype() {
 # wizard_start function.
 #
 # @return integer 0 if everything was fine, 1 if there was an error.
-# @author Andreas Haerter <ah@bitkollektiv.org>
 function wizard_step2_newmodname() {
 	NEWMODNAME="" # init the global var this wizard is for
 	if [ "${OPTION_NEWMODNAME}" != "" ]
@@ -432,7 +428,6 @@ function wizard_step2_newmodname() {
 # wizard_start function.
 #
 # @return integer 0 if everything was fine, 1 if there was an error.
-# @author Andreas Haerter <ah@bitkollektiv.org>
 function wizard_step3_targetdir() {
 	TARGETDIR="" # init the global var this wizard is for
 	if [ "${OPTION_TARGETDIR}" != "" ]
@@ -496,7 +491,6 @@ function wizard_step3_targetdir() {
 # wizard_start function.
 #
 # @return integer 0 if everything was fine, 1 if there was an error.
-# @author Andreas Haerter <ah@bitkollektiv.org>
 function wizard_step4_authorfullname() {
 	AUTHORFULLNAME="" # init the global var this wizard is for
 	if [ "${OPTION_AUTHORFULLNAME}" != "" ]
@@ -546,7 +540,6 @@ function wizard_step4_authorfullname() {
 # wizard_start function.
 #
 # @return integer 0 if everything was fine, 1 if there was an error.
-# @author Andreas Haerter <ah@bitkollektiv.org>
 function wizard_step5_authoremail() {
 	AUTHOREMAIL="" # init the global var this wizard is for
 	if [ "${OPTION_AUTHOREMAIL}" != "" ]
@@ -595,7 +588,6 @@ function wizard_step5_authoremail() {
 # User data collection wizard
 #
 # @return void
-# @author Andreas Haerter <ah@bitkollektiv.org>
 function repowizard_start() {
 	repowizard_step1_service
 	repowizard_step2_remotename
@@ -717,7 +709,6 @@ function repowizard_start() {
 # the repowizard_start function.
 #
 # @return integer 0 if everything was fine, 1 if there was an error.
-# @author Andreas Haerter <ah@bitkollektiv.org>
 function repowizard_step1_service() {
 	echo ""
 	echo "Please choose the service you want to use to host the repository for your"
@@ -814,7 +805,6 @@ function repowizard_step1_service() {
 # a helper of the repowizard_start function.
 #
 # @return integer 0 if everything was fine, 1 if there was an error.
-# @author Andreas Haerter <ah@bitkollektiv.org>
 function repowizard_step2_remotename() {
 	REPOHOSTINGSERVICEPROJECTNAME="" # init the global var this wizard is for
 	if [ "${OPTION_REPOHOSTINGSERVICEPROJECTNAME}" != "" ]
@@ -866,7 +856,6 @@ function repowizard_step2_remotename() {
 # of the repowizard_start function.
 #
 # @return integer 0 if everything was fine, 1 if there was an error.
-# @author Andreas Haerter <ah@bitkollektiv.org>
 function repowizard_step3_credentials() {
 	# username
 	REPOHOSTINGSERVICEUSERNAME="" # init the global var this wizard is for
@@ -1010,7 +999,6 @@ function repowizard_step3_credentials() {
 # helper of the repowizard_start function.
 #
 # @return integer 0 if everything was fine, 1 if there was an error.
-# @author Andreas Haerter <ah@bitkollektiv.org>
 function repowizard_step4_repoaccess() {
 	REPOHOSTINGSERVICEREPOACCESS="" # init the global var this wizard is for
 	if [ "${OPTION_REPOHOSTINGSERVICEREPOACCESS}" != "" ]
@@ -1067,7 +1055,6 @@ function repowizard_step4_repoaccess() {
 # Creates a repository/project on GitHub.
 #
 # @return integer 0 if everything was fine, 1 if there was an error.
-# @author Andreas Haerter <ah@bitkollektiv.org>
 # @link http://developer.github.com/v3/repos/
 # @link http://developer.github.com/v3/#authentication
 # @link http://blog.httpwatch.com/2009/02/20/how-secure-are-query-strings-over-https/
@@ -1132,7 +1119,6 @@ function github_createrepo() {
 # Creates a repository on Bitbucket.
 #
 # @return integer 0 if everything was fine, 1 if there was an error.
-# @author Andreas Haerter <ah@bitkollektiv.org>
 # @link http://confluence.atlassian.com/display/BITBUCKET/Repositories#Repositories-CreatingaNewRepository
 function bitbucket_createrepo() {
 	# init

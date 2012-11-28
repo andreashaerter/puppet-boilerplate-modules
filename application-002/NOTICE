@@ -5,14 +5,13 @@
 
 
 
-  I. Andreas Haerter <ah@bitkollektiv.org>
-     Andreas Wolf <aw@bitkollektiv.org>
+  I. SYN Systems <puppet@dev.syn-systems.com>
 
-    This Puppet module is based on the work of Bitkollektiv [1]. If you like
+    This Puppet module is based on the work of SYN Systems [1]. If you like
     their projects, you might buy them a coffee [2], or get some cool QR Code
     merchandise [3]. Thank you! :-)
 
-    [1] <http://bitkollektiv.org/>
-    [2] <http://bitkollektiv.org/donate/puppet-modules/>
+    [1] <http://syn-systems.com/>
+    [2] <http://syn-systems.com/donate/puppet-modules/>
     [3] <http://goqr.me/>
 
