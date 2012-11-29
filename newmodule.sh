@@ -348,7 +348,7 @@ function wizard_step1_boilerplatetype() {
 			OPTION_BOILERPLATE=""
 			echo "-b: invalid value, ignoring it." 1>&2
 		fi
-		echo "See http://j.mp/JVPxKL for example modules based on the different boilerplates."
+		echo "See http://j.mp/X3GnY9 for example modules based on the different boilerplates."
 		echo -n "Number identifying the boilerplate to use? "
 		read CHOICE
 		local CHOICE_OK=false
