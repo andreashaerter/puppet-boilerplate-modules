@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 ################################################################################
 # Puppet module creator
@@ -7,7 +7,6 @@
 # based on a boilerplate you choose.
 #
 # @author Andreas Haerter <ah@syn-systems.com>
-# @copyright 2012, SYN Systems GmbH
 # @license Apache License 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 # @link http://syn-systems.com/
 ################################################################################
@@ -20,14 +19,14 @@
 
 # directory where the Puppet module boilerplates are located, without trailing
 # slash!
-DIR_BOILERPLATES=$(dirname "${0}")
+DIR_BOILERPLATES="$(dirname "${0}")"
 
 # some placeholder strings and/or names used within the boilerplate source codes
-STR_PLACEHOLDER_BOILERPLATE="boilerplate"
-STR_PLACEHOLDER_AUTHORFULLNAME="John Doe"
-STR_PLACEHOLDER_AUTHOREMAIL="john.doe@example.com"
-STR_PLACEHOLDER_CURRENTYEAR="YYYY"
-STR_PLACEHOLDER_FIXME="FIXME/TODO"
+STR_PLACEHOLDER_BOILERPLATE='boilerplate'
+STR_PLACEHOLDER_AUTHORFULLNAME='John Doe'
+STR_PLACEHOLDER_AUTHOREMAIL='john.doe@example.com'
+STR_PLACEHOLDER_CURRENTYEAR='YYYY'
+STR_PLACEHOLDER_FIXME='FIXME/TODO'
 
 
 
@@ -41,6 +40,7 @@ STR_PLACEHOLDER_FIXME="FIXME/TODO"
 # Functions
 ################################################################################
 
+
 ###
 # Recursive file string replace.
 #
@@ -51,185 +51,170 @@ STR_PLACEHOLDER_FIXME="FIXME/TODO"
 # @param string The replacement value ("replace") that replaces found search
 #        values.
 # @param string Directory to search for "haystack" files.
-# @param boolean Verbose flag. Controls if the function should operate silently
-#        (=false, default) or not (=true).
-# @return integer 0 if everything was fine, 1 if there was an error.
-function str_rreplace() {
-	# allow usage of uninitialized variables
-	set +u
+# @param integer (optional) Verbose flag. Controls if the function should
+#        operate silently (=0, default) or not (=1).
+# @return integer 0 if executed successfully, 1 otherwise.
+str_rreplace() {
+	local dir ifs_save lang_save langtmp_ok os replace search touched verbose
 
 	# param: search
-	local SEARCH="${1}"
-	if [ "${SEARCH}" == "" ]
+	search="${1}"
+	if [ -z "${search}" ]
 	then
-		echo "Parameter is invalid: search" 1>&2
+		printf 'Parameter is invalid: search.\n' 1>&2
 		return 1
 	fi
 
 	# param: replace
-	local REPLACE="${2}"
+	replace="${2}"
 
 	# param: directory
-	local DIR="${3}"
-	if [ "${DIR}" != "/" ]
+	dir="${3}"
+	if [ "${dir}" != '/' ]
 	then
-		local DIR="${DIR%/}" # strip trailing slash
+		dir="$(printf '%s' "${dir}" | sed 's,/$,,')" # strip trailing slash
 	fi
-	if [ ! -d "${DIR}" ]
+	if ! [ -d "${dir}" ]
 	then
-		echo "Could not access directory: '${DIR}'" 1>&2
-		echo "Please place this script in the same directory as the boilerplates." 1>&2
+		printf 'Could not access directory: "%s"\n' "${dir}" 1>&2
+		printf 'Please place this script in the same directory as the boilerplates.\n' 1>&2
 		return 1
 	fi
 
-	# param: verbose
-	if [ "${4}" == "true" ] # use quotes to prevent errors if undefined
+	# param: verbose flag
+	if [ -z "${4:-}" ] # ${foo:-} works with set -u
 	then
-		local VERBOSE=true
+		verbose='0'
 	else
-		local VERBOSE=false
+		verbose="${4}"
+	fi
+	if [ "${verbose}" -gt 0 ]
+	then
+		verbose='1'
+	else
+		verbose='0'
 	fi
 
-	# prevent usage of uninitialized variables
-	set -u
-
-	# Change current LANG setting for following operations if needed. This is
-	# done to prevent issues regarding the sed plus grep commands and the UTF-8
-	# encoded files we are going to work with. Q.v. <http://j.mp/GgQMV>.
-	local LANG_SAVE=${LANG} # copy current locale LANG value.
-	if [[ ! "${LANG}" == *"utf8" ]] && # check if current locale is UTF-8 aware
-	   [[ ! "${LANG}" == *"UTF8" ]] &&
-	   [[ ! "${LANG}" == *"utf-8" ]] &&
-	   [[ ! "${LANG}" == *"UTF-8" ]]
+	# Change current LANG setting for following operations if needed. This
+	# prevents issues regarding some commands (e.g. 'sed', 'grep', ...) and the
+	# UTF-8 encoded files we are going to work with. Q.v.: <http://j.mp/GgQMV>.
+	lang_save="${LANG}" # copy current locale LANG value.
+	if ! printf '%s' "${LANG}" | grep -E -q -i -e '*utf-?8$' # current locale is UTF-8 aware?
 	then
-		# search for an alternative...
-		local LANGTMP_OK=false
-		for RESOURCE in $(locale -a | egrep -i "*\.utf-?8$" | egrep "^(en|de|es|fr)_*" | sort)
+		# It is not. Search for an alternative...
+		langtmp_ok='0'
+		for RESOURCE in $(locale -a | grep -E -i -e '*\.utf-?8$' | grep -E -i -e '^(en|de|es|fr)_*' | sort)
 		do
 			# use it and break loop if a "favorite" (=tested) locale is present
-			if [ "${RESOURCE}" == "de_CH.utf8" ] || # Linux
-			   [ "${RESOURCE}" == "de_DE.utf8" ] || # Linux
-			   [ "${RESOURCE}" == "en_GB.utf8" ] || # Linux
-			   [ "${RESOURCE}" == "en_NZ.utf8" ] || # Linux
-			   [ "${RESOURCE}" == "en_US.utf8" ] || # Linux
-			   [ "${RESOURCE}" == "de_AT.UTF-8" ] || # Mac OS
-			   [ "${RESOURCE}" == "de_CH.UTF-8" ] || # Mac OS
-			   [ "${RESOURCE}" == "de_DE.UTF-8" ] || # Mac OS
-			   [ "${RESOURCE}" == "en_AU.UTF-8" ] || # Mac OS
-			   [ "${RESOURCE}" == "en_CA.UTF-8" ] || # Mac OS
-			   [ "${RESOURCE}" == "en_GB.UTF-8" ] || # Mac OS
-			   [ "${RESOURCE}" == "en_IE.UTF-8" ] || # Mac OS
-			   [ "${RESOURCE}" == "en_NZ.UTF-8" ] || # Mac OS
-			   [ "${RESOURCE}" == "en_US.UTF-8" ]    # Mac OS
+			if printf '%s' "${RESOURCE}" | grep -E -q -i -e '^de_(AT|CH|DE)' ||
+			   printf '%s' "${RESOURCE}" | grep -E -q -i -e '^en_(AU|CA|GB|IE|NZ|US)' ||
+			   printf '%s' "${RESOURCE}" | grep -E -q -i -e '^es_(ES|MX|US|VE)' ||
+			   printf '%s' "${RESOURCE}" | grep -E -q -i -e '^fr_(BE|CA|CH|FR|LU)'
 			then
-				LANG=${RESOURCE}
-				local LANGTMP_OK=true
+				LANG="${RESOURCE}"
+				langtmp_ok='1'
 				break
 			fi
 		done
 		unset RESOURCE
 		# check if we found something useful...
-		if [ ${LANGTMP_OK} != true ]
+		if [ "${langtmp_ok}" -ne 1 ]
 		then
-			LANG=${LANG_SAVE} # restore LANG
-			echo "Current locale is not UTF-8 aware: '${LANG}'" 1>&2
+			LANG="${lang_save}" # restore LANG
+			printf 'Current locale is not UTF-8 aware: "%s"\n' "${LANG}" 1>&2
 			return 1
 		fi
-		unset LANGTMP_OK
+		unset langtmp_ok
 	fi
 
 	# inform user
-	if [ ${VERBOSE} == true ]
+	if [ "${verbose}" -eq 1 ]
 	then
-		echo -e "\033[1mReplacing '${SEARCH}' with '${REPLACE}'\033[0m"
+		printf '\033[1mReplacing "%s" with "%s"\033[0m\n' "${search}" "${replace}"
 	fi
 
 	# let's work
-	local TOUCHED=false
-	local IFS_SAVE=${IFS} # copy current IFS (Internal Field Separator)
-	IFS=$'\n'
-	for RESOURCE in $(grep -R "${SEARCH}" "${DIR}" | cut -d ":" -f 1 -s | sort | uniq)
+	touched='0'
+	ifs_save="${IFS}" # copy current IFS (Internal Field Separator)
+	IFS="$(printf '\n+')"
+	for RESOURCE in $(grep -R "${search}" "${dir}" | cut -d ":" -f 1 -s | sort | uniq)
 	do
-		if [[ "${OSTYPE}" == *"darwin"* ]] || # Mac OS is using BSD sed
-		   [[ "${OSTYPE}" == *"freebsd"* ]]
+		os="$(bash -c 'printf '\''%s'\'' "${OSTYPE}"')" # FIXME better "GNU vs. BSD sed" detection here. Maybe "uname -o"?
+		if printf '%s' "${os}" | grep -F -q -i -e 'darwin' || # Mac OS is using BSD sed
+		   printf '%s' "${os}" | grep -F -q -i -e 'freebsd'
 		then
-			sed -i "" -e "s/${SEARCH}/${REPLACE}/g" "${RESOURCE}" # BSD style
+			sed -i '' -e "s/${search}/${replace}/g" "${RESOURCE}" # BSD style
 		else
-			sed -i -e "s/${SEARCH}/${REPLACE}/g" "${RESOURCE}" # GNU style
+			sed -i -e "s/${search}/${replace}/g" "${RESOURCE}" # GNU style
 		fi
 		if [ $? -ne 0 ]
 		then
-			echo "Replacing '${SEARCH}' with '${REPLACE}' in '${RESOURCE}' failed." 1>&2
-			LANG=${LANG_SAVE} # restore LANG
+			printf 'Replacing "%s" with "%s" in "%s" failed.\n' "${search}" "${replace}" "${RESOURCE}" 1>&2
+			LANG="${lang_save}" # restore LANG
 			return 1
-		elif [ ${VERBOSE} == true ]
+		elif [ "${verbose}" -eq 1 ]
 		then
-			echo "Changed: '${RESOURCE}'"
+			printf 'Changed: "%s"\n' "${RESOURCE}"
 		fi
-		local TOUCHED=true
+		touched='1'
 	done
-	IFS=${IFS_SAVE} # restore IFS (Internal Field Separator)
+	IFS="${ifs_save}" # restore IFS (Internal Field Separator)
 
-	if [ ${VERBOSE} == true ] &&
-	   [ ${TOUCHED} == false ]
+	if [ "${verbose}" -eq 1 ] &&
+	   [ "${touched}" -eq 0 ]
 	then
-		echo "Nothing to replace, no file contains '${SEARCH}'".
+		printf 'Nothing to replace, no file contains "%s".\n' "${search}"
 	fi
 
-	echo -e "\033[32mDone.\033[0m"
-	LANG=${LANG_SAVE} # restore LANG
+	printf '\033[32mDone.\033[0m\n'
+	LANG="${lang_save}" # restore LANG
 	return 0
 }
 
 
 ###
-# User data collection wizard
+# Interactive data collection wizard
 #
 # @return void
-function wizard_start() {
+wizard_start() {
+	local data_ok exitprog
+
 	wizard_step1_boilerplatetype
 	wizard_step2_newmodname
 	wizard_step3_targetdir
 	wizard_step4_authorfullname
 	wizard_step5_authoremail
 	# show overview about the collected data (unless everything was set by parameters)
-	if [ "${OPTION_AUTHORFULLNAME}" == "" ] ||
-	   [ "${OPTION_BOILERPLATE}" == "" ] ||
-	   [ "${OPTION_AUTHOREMAIL}" == "" ] ||
-	   [ "${OPTION_NEWMODNAME}" == "" ] ||
-	   [ "${OPTION_TARGETDIR}" == "" ]
+	if [ -z "${OPTION_AUTHORFULLNAME}" ]
+	   [ -z "${OPTION_BOILERPLATE}" ]
+	   [ -z "${OPTION_AUTHOREMAIL}" ]
+	   [ -z "${OPTION_NEWMODNAME}" ]
+	   [ -z "${OPTION_TARGETDIR}" ]
 	then
-		DATA_OK="n" #init
+		data_ok='n'
 		clear
-		echo "###############################################################################"
-		echo "# Puppet module creator: data overview"
-		echo "###############################################################################"
-		echo -e "\033[1mBoilerplate source:\033[0m"
-		echo "${SOURCEDIR}"
-		echo ""
-		echo -e "\033[1mNew module will be created in:\033[0m"
-		echo "${TARGETDIR}"
-		echo ""
-		echo -e "\033[1mAuthor/creator of the new module:\033[0m"
-		echo "${AUTHORFULLNAME} <${AUTHOREMAIL}>"
-		echo ""
-		echo -n "Is this correct? [y|n]: "
-		read DATA_OK
-		while [ ! "${DATA_OK}" == "y" ] &&
-			  [ ! "${DATA_OK}" == "Y" ] &&
-			  [ ! "${DATA_OK}" == "j" ] &&
-			  [ ! "${DATA_OK}" == "J" ]
+		printf '###############################################################################\n'
+		printf '# Puppet module creator: data overview\n'
+		printf '###############################################################################\n'
+		printf '\033[1mBoilerplate source:\033[0m\n%s\n\n' "${SOURCEDIR}"
+		printf '\033[1mNew module will be created in:\033[0m\n%s\n\n' "${TARGETDIR}"
+		printf '\033[1mAuthor/creator of the new module:\033[0m\n%s <%s>\n\n' "${AUTHORFULLNAME}" "${AUTHOREMAIL}"
+		printf 'Is this correct? [y|n]: '
+		read data_ok
+		while [ "${data_ok}" != 'y' ] &&
+		      [ "${data_ok}" != 'Y' ] &&
+		      [ "${data_ok}" != 'j' ] &&
+		      [ "${data_ok}" != 'J' ]
 		do
-			EXITPROG="n" #init
-			echo -n "Exit program? [y|n]: "
-			read EXITPROG
-			if [ "${EXITPROG}" == "y" ] ||
-			   [ "${EXITPROG}" == "Y" ] ||
-			   [ "${EXITPROG}" == "j" ] ||
-			   [ "${EXITPROG}" == "J" ]
+			exitprog='n'
+			printf 'Exit program? [y|n]: '
+			read exitprog
+			if [ "${exitprog}" = 'y' ] ||
+			   [ "${exitprog}" = 'Y' ] ||
+			   [ "${exitprog}" = 'j' ] ||
+			   [ "${exitprog}" = 'J' ]
 			then
-				echo "Operation canceled by user"
-				echo ""
+				printf 'Operation canceled by user\n\n'
 				exit 0
 			fi
 			# once more with feeling...
@@ -240,23 +225,18 @@ function wizard_start() {
 			wizard_step4_authorfullname
 			wizard_step5_authoremail
 			clear
-			echo "###############################################################################"
-			echo "# Puppet module creator: data overview"
-			echo "###############################################################################"
-			echo -e "\033[1mBoilerplate source:\033[0m"
-			echo "${SOURCEDIR}"
-			echo ""
-			echo -e "\033[1mNew module will be created in:\033[0m"
-			echo "${TARGETDIR}"
-			echo ""
-			echo -e "\033[1mAuthor/creator of the new module:\033[0m"
-			echo "${AUTHORFULLNAME} <${AUTHOREMAIL}>"
-			echo ""
-			echo -n "Is this correct? [y|n]: "
-			read DATA_OK
+			printf '###############################################################################\n'
+			printf '# Puppet module creator: data overview\n'
+			printf '###############################################################################\n'
+			printf '\033[1mBoilerplate source:\033[0m\n%s\n\n' "${SOURCEDIR}"
+			printf '\033[1mNew module will be created in:\033[0m\n%s\n\n' "${TARGETDIR}"
+			printf '\033[1mAuthor/creator of the new module:\033[0m\n%s <%s>\n\n' "${AUTHORFULLNAME}" "${AUTHOREMAIL}"
+			printf 'Is this correct? [y|n]: '
+			read data_ok
 		done
+		printf '\n'
 	fi
-	unset DATA_OK
+	unset data_ok
 }
 
 
@@ -266,113 +246,118 @@ function wizard_start() {
 # This function is setting the global SOURCEDIR var. It is a helper of the
 # wizard_start function.
 #
-# @return integer 0 if everything was fine, 1 if there was an error.
-function wizard_step1_boilerplatetype() {
-	echo ""
-	echo "Please choose the type of boilerplate to use for the new module by typing the"
-	echo "corresponding number:"
-	echo ""
-	SOURCEDIR="" # init the global var this wizard is for
+# @return integer 0 if executed successfully, 1 otherwise.
+wizard_step1_boilerplatetype() {
+	local basename choice_ok list choice list_itemcount i ifs_save
 
-	local CHOICE="none" #init
-	local INDEX=0 # init
-	local IFS_SAVE=${IFS} # copy current IFS (Internal Field Separator)
-	IFS=$'\n'
-	for RESOURCE in $(find "${DIR_BOILERPLATES}" -maxdepth 1 -type d -not -name "\.git" -not -name "\.hg" | sort)
+	printf '\n'
+	printf 'Please choose the type of boilerplate to use for the new module by typing the\n'
+	printf 'corresponding number:\n'
+	printf '\n'
+	SOURCEDIR='' # init the global var this wizard is for
+
+	# show a list the user can choose from
+	list=''
+	choice='none'
+	i='1'
+	ifs_save="${IFS}" # copy current IFS (Internal Field Separator)
+	IFS="$(printf '\n+')"
+	for ITEM in $(find "${DIR_BOILERPLATES}" -maxdepth 1 -type d -not -name '\.git' -not -name '\.hg' | sort)
 	do
 		# sort-out non-boilerplate directories
-		if [ "${RESOURCE}" == "${DIR_BOILERPLATES}" ] || # containing dir itself
-		   [ ! -f "${RESOURCE}/manifests/init.pp" ]
+		if [ "${ITEM}" = "${DIR_BOILERPLATES}" ] || # containing dir itself
+		   [ ! -f "${ITEM}/manifests/init.pp" ]
 		then
 			continue 1
 		fi
 
-		# show
-		local BASENAME=$(basename "${RESOURCE}")
-		echo -e "  \033[1m${INDEX}: ${BASENAME}\033[0m"
-		if [ -f "${RESOURCE}/DESCRIPTION" ]
+		# show the item and its number
+		basename="$(basename "${ITEM}")"
+		printf '  \033[1m%2u: %s\033[0m\n' "${i}" "${basename}"
+		if [ -f "${ITEM}/DESCRIPTION" ]
 		then
-			for LINE in $(cat "${RESOURCE}/DESCRIPTION")
+			for LINE in $(cat "${ITEM}/DESCRIPTION")
 			do
-				if [ ${INDEX} -lt 10 ]
-				then
-					echo -n "     "
-				else
-					echo -n "      "
-				fi
-				echo ${LINE}
+				printf '      %s\n' "${LINE}"
 			done
 			unset LINE
 		fi
-		echo ""
+		printf '\n'
 
-		# pre-select boilerplate if parameter was specified
-		if [ "${OPTION_BOILERPLATE}" == "${BASENAME}" ]
+		# pre-select item if specified by parameter
+		if [ "${OPTION_BOILERPLATE}" = "${basename}" ]
 		then
-			local CHOICE=${INDEX}
+			choice="${i}"
 		fi
 
-		# store
-		local LIST[${INDEX}]=${RESOURCE}
-		let INDEX=${INDEX}+1
+		# store item in list (separated by ":")
+		list="${list}${ITEM}:"
+		i="$((${i}+1))"
 	done
-	unset RESOURCE
-	unset BASENAME
-	unset INDEX
-	IFS=${IFS_SAVE} # restore IFS (Internal Field Separator)
-	unset IFS_SAVE
+	unset ITEM
+	unset i
+	IFS="${ifs_save}" # restore IFS (Internal Field Separator)
+	unset ifs_save
+	list="$(printf '%s' "${list}" | sed 's,:$,,')" # strip trailing ":" separator
 
-	set +u # allow usage of uninitialized variables
-	if [ ${#LIST[@]} -eq 0 ]
+
+	# count list items
+	list_itemcount="$(printf '%s' "${list}" | sed 's/[^:]//g' | wc -m)" # count number of ":"
+	list_itemcount="$((list_itemcount+1))"
+	if [ "${list_itemcount}" -eq 0 ]
 	then
-		echo "" 1>&2
-		echo "Could not find any boilerplates in '${DIR_BOILERPLATES}'." 1>&2
+		printf '\n' 1>&2
+		printf 'Could not find any boilerplates in "%s".\n' "${DIR_BOILERPLATES}" 1>&2
 		exit 1
-	elif [ ${#LIST[@]} -eq 1 ]
+	fi
+
+
+	# choose list item
+	printf '\n'
+	if [ "${list_itemcount}" -eq 1 ]
 	then
-		echo ""
-		echo "There is only one boilerplate, therefore nothing to choose."
-		echo -n "Using "
-		basename "${LIST[0]}"
-		local CHOICE=0
-	elif [ "${CHOICE}" != "none" ]
+		choice="${list_itemcount}"
+		SOURCEDIR="$(printf '%s' "${list}" | cut -d ':' -f "${choice}")"
+		printf 'There is only one boilerplate, therefore nothing to choose.\n'
+		printf 'Using "%s".\n' "$(basename "${SOURCEDIR}")"
+	elif [ "${choice}" != 'none' ]
 	then
-		echo ""
-		echo "Boilerplate to use was specified by parameter."
-		echo -n "Using "
-		basename "${LIST[${CHOICE}]}"
+		SOURCEDIR="$(printf '%s' "${list}" | cut -d ':' -f "${choice}")"
+		printf 'Boilerplate to use was specified by parameter.\n'
+		printf 'Using "%s".\n' "$(basename "${SOURCEDIR}")"
 	else
-		if [ "${OPTION_BOILERPLATE}" != "" ] &&
-		   [ "${CHOICE}" == "none" ]
+		if [ -n "${OPTION_BOILERPLATE}" ] &&
+		   [ "${choice}" = 'none' ]
 		then
-			OPTION_BOILERPLATE=""
-			echo "-b: invalid value, ignoring it." 1>&2
+			OPTION_BOILERPLATE=''
+			printf '%s' '-b: ' 1>&2
+			printf 'invalid value, ignoring it.' 1>&2
 		fi
-		echo "See http://j.mp/X3GnY9 for example modules based on the different boilerplates."
-		echo -n "Number identifying the boilerplate to use? "
-		read CHOICE
-		local CHOICE_OK=false
-		while [ ${CHOICE_OK} != true ]
+		printf 'See http://j.mp/X3GnY9 for example modules based on the different boilerplates.\n'
+		printf 'Number identifying the boilerplate to use? '
+		read choice
+		choice_ok='0'
+		while [ "${choice_ok}" -ne 1 ]
 		do
-			if [ "${CHOICE}" == "" ] ||
-			   [[ ! "${CHOICE}" =~ ^[0-9]*$ ]] ||
-			   [ "${LIST[${CHOICE}]}" == "" ]
+			if [ -z "${choice}" ] ||
+			   ! printf '%s' "${choice}" | grep -E -q -e '^[0-9]*$' ||
+			   [ "${choice}" -gt "${list_itemcount}" ] ||
+			   [ "${choice}" -lt 1 ]
 			then
-				echo -n "Invalid, try again: "
-				read CHOICE
+				printf 'Invalid, try again: '
+				read choice
 				continue 1
 			else
-				local CHOICE_OK=true
+				choice_ok='1'
 				break 1
 			fi
 		done
-		# clean up
-		unset CHOICE_OK
+		unset choice_ok
+		SOURCEDIR="$(printf '%s' "${list}" | cut -d ':' -f "${choice}")"
 	fi
-	SOURCEDIR=${LIST[${CHOICE}]} # var we need to process the module creation
-	unset LIST
-	unset CHOICE
-	set -u # prevent usage of uninitialized variables
+
+	unset list
+	unset choice
 	return 0
 }
 
@@ -383,36 +368,38 @@ function wizard_step1_boilerplatetype() {
 # This function is setting the global NEWMODNAME var. It is a helper of the
 # wizard_start function.
 #
-# @return integer 0 if everything was fine, 1 if there was an error.
-function wizard_step2_newmodname() {
-	NEWMODNAME="" # init the global var this wizard is for
-	if [ "${OPTION_NEWMODNAME}" != "" ]
+# @return integer 0 if executed successfully, 1 otherwise.
+wizard_step2_newmodname() {
+	local newmodname_ok
+
+	NEWMODNAME='' # init the global var this wizard is for
+	if [ -n "${OPTION_NEWMODNAME}" ]
 	then
-		echo ""
-		echo "Name of the new module was specified by parameter."
-		echo "Using '${OPTION_NEWMODNAME}'."
-		NEWMODNAME=${OPTION_NEWMODNAME}
+		printf '\n'
+		printf 'Name of the new module was specified by parameter.\n'
+		printf 'Using "%s".\n' "${OPTION_NEWMODNAME}"
+		NEWMODNAME="${OPTION_NEWMODNAME}"
 	else
 		# inform user about the naming rules, cf. http://j.mp/xuM3Rr and http://j.mp/wZ8quk
-		echo ""
-		echo ""
-		echo "NOTE: module names are restricted to lowercase alphanumeric characters and"
-		echo "      underscores, and should begin with a lowercase letter; that is, they"
-		echo "      have to match the pattern '^[a-z][a-z0-9_]*$'"
-		echo ""
-		echo -n "Please enter the name for the new module: "
+		printf '\n'
+		printf '\n'
+		printf 'NOTE: module names are restricted to lowercase alphanumeric characters and\n'
+		printf '      underscores, and should begin with a lowercase letter; that is, they\n'
+		printf '      have to match the pattern "^[a-z][a-z0-9_]*$"\n'
+		printf '\n'
+		printf 'Please enter the name for the new module: '
 		read NEWMODNAME
-		local NEWMODNAME_OK=false
-		while [ ${NEWMODNAME_OK} != true ]
+		newmodname_ok='0'
+		while [ "${newmodname_ok}" -ne 1 ]
 		do
-			if [ "${NEWMODNAME}" == "" ] ||
-			   [[ ! "${NEWMODNAME}" =~ ^[a-z][a-z0-9_]*$ ]] # don't forget to update the parameter check if you change something here!
+			if [ -z "${NEWMODNAME}" ] ||
+			   ! printf '%s' "${NEWMODNAME}" | grep -E -q -e '^[a-z][a-z0-9_]*$' # don't forget to update the parameter check if you change something here!
 			then
-				echo -n "Invalid, try again: "
+				printf 'Invalid, try again: '
 				read NEWMODNAME
 				continue 1
 			else
-				local NEWMODNAME_OK=true
+				newmodname_ok='1'
 				break 1
 			fi
 		done
@@ -427,54 +414,56 @@ function wizard_step2_newmodname() {
 # This function is setting the global TARGETDIR var. It is a helper of the
 # wizard_start function.
 #
-# @return integer 0 if everything was fine, 1 if there was an error.
-function wizard_step3_targetdir() {
-	TARGETDIR="" # init the global var this wizard is for
-	if [ "${OPTION_TARGETDIR}" != "" ]
+# @return integer 0 if executed successfully, 1 otherwise.
+wizard_step3_targetdir() {
+	local targetdir_ok
+
+	TARGETDIR='' # init the global var this wizard is for
+	if [ -n "${OPTION_TARGETDIR}" ]
 	then
-		echo ""
-		echo "Target directory in which the module shall be copied was specified by parameter."
-		echo "Using '${OPTION_TARGETDIR}'."
-		TARGETDIR=${OPTION_TARGETDIR}
+		printf '\n'
+		printf 'Target directory in which the module shall be copied was specified by parameter.\n'
+		printf 'Using "%s".\n' "${OPTION_TARGETDIR}"
+		TARGETDIR="${OPTION_TARGETDIR}"
 	else
-		echo ""
-		echo "Please enter the target directory in which the module shall be copied"
-		echo -n "to (just press [ENTER] for '${HOME}'):"
+		printf '\n'
+		printf 'Please enter the target directory in which the module shall be copied\n'
+		printf 'to (just press [ENTER] for "%s"): ' "${HOME}"
 		read TARGETDIR
-		if [ "${TARGETDIR}" != "/" ]
+		if [ "${TARGETDIR}" != '/' ]
 		then
-			TARGETDIR="${TARGETDIR%/}" # strip trailing slash
+			TARGETDIR="$(printf '%s' "${TARGETDIR}" | sed 's,/$,,')" # strip trailing slash
 		fi
-		TARGETDIR_OK=false
-		while [ ${TARGETDIR_OK} != true ]
+		targetdir_ok='0'
+		while [ "${targetdir_ok}" -ne 1 ]
 		do
-			if [ "${TARGETDIR}" == "" ]
+			if [ -z "${TARGETDIR}" ]
 			then
 				# use home of current user if user just pressed [ENTER]
-				TARGETDIR=${HOME}
+				TARGETDIR="${HOME}"
 			fi
 			# don't forget to update the parameter checks if you change something here!
 			if [ ! -d "${TARGETDIR}" ]
 			then
-				echo -n "Could not access target, try again: "
+				printf 'Could not access target, try again: '
 				read TARGETDIR
-				if [ "${TARGETDIR}" != "/" ]
+				if [ "${TARGETDIR}" != '/' ]
 				then
-					TARGETDIR="${TARGETDIR%/}" # strip trailing slash
+					TARGETDIR="$(printf '%s' "${TARGETDIR}" | sed 's,/$,,')" # strip trailing slash
 				fi
 				continue 1
 			elif [ -d "${TARGETDIR}/${NEWMODNAME}" ]
 			then
-				echo "'${TARGETDIR}/${NEWMODNAME}' is already existing."
-				echo -n "Target invalid, try again: "
+				printf '"%s" is already existing.\n' "${TARGETDIR}/${NEWMODNAME}"
+				printf 'Target invalid, try again: '
 				read TARGETDIR
-				if [ "${TARGETDIR}" != "/" ]
+				if [ "${TARGETDIR}" != '/' ]
 				then
-					TARGETDIR="${TARGETDIR%/}" # strip trailing slash
+					TARGETDIR="$(printf '%s' "${TARGETDIR}" | sed 's,/$,,')" # strip trailing slash
 				fi
 				continue 1
 			else
-				local TARGETDIR_OK=true
+				targetdir_ok='1'
 				break 1
 			fi
 		done
@@ -490,41 +479,43 @@ function wizard_step3_targetdir() {
 # This function is setting the global AUTHORFULLNAME var. It is a helper of the
 # wizard_start function.
 #
-# @return integer 0 if everything was fine, 1 if there was an error.
-function wizard_step4_authorfullname() {
-	AUTHORFULLNAME="" # init the global var this wizard is for
-	if [ "${OPTION_AUTHORFULLNAME}" != "" ]
+# @return integer 0 if executed successfully, 1 otherwise.
+wizard_step4_authorfullname() {
+	local authorfullname_ok
+
+	AUTHORFULLNAME='' # init the global var this wizard is for
+	if [ -n "${OPTION_AUTHORFULLNAME}" ]
 	then
-		echo ""
-		echo "Name of the author was specified by parameter."
-		echo "Using '${OPTION_AUTHORFULLNAME}'."
-		AUTHORFULLNAME=${OPTION_AUTHORFULLNAME}
+		printf '\n'
+		printf 'Name of the author was specified by parameter.\n'
+		printf 'Using "%s".\n' "${OPTION_AUTHORFULLNAME}"
+		AUTHORFULLNAME="${OPTION_AUTHORFULLNAME}"
 	else
-		echo ""
-		if [ "${ENV_AUTHORFULLNAME}" == "" ]
+		printf '\n'
+		if [ -z "${ENV_AUTHORFULLNAME}" ]
 		then
-			echo -n "Please enter your full name (source code author info): "
+			printf 'Please enter your full name (source code author info): '
 		else
-			echo "Please enter your full name (source code author info, just press [ENTER]"
-			echo -n "for '${ENV_AUTHORFULLNAME}'): "
+			printf 'Please enter your full name (source code author info, just press [ENTER]\n'
+			printf 'for "%s"): ' "${ENV_AUTHORFULLNAME}"
 		fi
 		read AUTHORFULLNAME
-		AUTHORFULLNAME_OK=false
-		while [ ${AUTHORFULLNAME_OK} != true ]
+		authorfullname_ok='0'
+		while [ "${authorfullname_ok}" -ne 1 ]
 		do
-			if [ "${AUTHORFULLNAME}" == "" ] &&
-			   [ "${ENV_AUTHORFULLNAME}" == "" ]
+			if [ -z "${AUTHORFULLNAME}" ] &&
+			   [ -z "${ENV_AUTHORFULLNAME}" ]
 			then
-				echo -n "Invalid, try again: "
+				printf 'Invalid, try again: '
 				read AUTHORFULLNAME
 				continue 1
-			elif [ "${AUTHORFULLNAME}" == "" ] &&
-			     [ "${ENV_AUTHORFULLNAME}" != "" ]
+			elif [ -z "${AUTHORFULLNAME}" ] &&
+			     [ -z "${ENV_AUTHORFULLNAME}" ]
 			then
 				# use environment variable if user just pressed [ENTER]
-				AUTHORFULLNAME=${ENV_AUTHORFULLNAME}
+				AUTHORFULLNAME="${ENV_AUTHORFULLNAME}"
 			else
-				local AUTHORFULLNAME_OK=true
+				authorfullname_ok='1'
 				break 1
 			fi
 		done
@@ -539,43 +530,45 @@ function wizard_step4_authorfullname() {
 # This function is setting the global AUTHOREMAIL var. It is a helper of the
 # wizard_start function.
 #
-# @return integer 0 if everything was fine, 1 if there was an error.
-function wizard_step5_authoremail() {
-	AUTHOREMAIL="" # init the global var this wizard is for
-	if [ "${OPTION_AUTHOREMAIL}" != "" ]
+# @return integer 0 if executed successfully, 1 otherwise.
+wizard_step5_authoremail() {
+	local authoremail_ok
+
+	AUTHOREMAIL='' # init the global var this wizard is for
+	if [ -n "${OPTION_AUTHOREMAIL}" ]
 	then
-		echo ""
-		echo "Email address of the author was specified by parameter."
-		echo "Using '${OPTION_AUTHOREMAIL}'."
-		AUTHOREMAIL=${OPTION_AUTHOREMAIL}
+		printf '\n'
+		printf 'Email address of the author was specified by parameter.\n'
+		printf 'Using "%s".\n' "${OPTION_AUTHOREMAIL}"
+		AUTHOREMAIL="${OPTION_AUTHOREMAIL}"
 	else
-		echo ""
-		if [ "${ENV_AUTHOREMAIL}" == "" ]
+		printf '\n'
+		if [ -z "${ENV_AUTHOREMAIL}" ]
 		then
-			echo -n "Please enter your email address (source code author info): "
+			printf 'Please enter your email address (source code author info): '
 		else
-			echo "Please enter your email address (source code author info, just press [ENTER]"
-			echo -n "for '${ENV_AUTHOREMAIL}'): "
+			printf 'Please enter your email address (source code author info, just press [ENTER]\n'
+			printf 'for "%s"): ' "${ENV_AUTHOREMAIL}"
 		fi
 		read AUTHOREMAIL
-		AUTHOREMAIL_OK=false
-		while [ ${AUTHOREMAIL_OK} != true ]
+		authoremail_ok='0'
+		while [ "${authoremail_ok}" -ne 1 ]
 		do
-			if ([ "${AUTHOREMAIL}" == "" ] &&
-			    [ "${ENV_AUTHOREMAIL}" == "" ]) ||
-			   ([ "${AUTHOREMAIL}" != "" ] &&
-			    [[ "${AUTHOREMAIL}" != *"@"* ]]) # don't forget to update the parameter and environment variable check if you change something here!
+			if ([ -z "${AUTHOREMAIL}" ] &&
+			    [ -z "${ENV_AUTHOREMAIL}" ]) ||
+			   ([ -n "${AUTHOREMAIL}" ] &&
+			    ! printf '%s' "${AUTHOREMAIL}" | grep -F -q -e '@') # don't forget to update the parameter and environment variable check if you change something here!
 			then
-				echo -n "Invalid, try again: "
+				printf 'Invalid, try again: '
 				read AUTHOREMAIL
 				continue 1
-			elif [ "${AUTHOREMAIL}" == "" ] &&
-			     [ "${ENV_AUTHOREMAIL}" != "" ]
+			elif [ -z "${AUTHOREMAIL}" ] &&
+			     [ -n "${ENV_AUTHOREMAIL}" ]
 			then
 				# use environment variable if user just pressed [ENTER]
-				AUTHOREMAIL=${ENV_AUTHOREMAIL}
+				AUTHOREMAIL="${ENV_AUTHOREMAIL}"
 			else
-				local AUTHOREMAIL_OK=true
+				authoremail_ok='1'
 				break 1
 			fi
 		done
@@ -585,74 +578,67 @@ function wizard_step5_authoremail() {
 
 
 ###
-# User data collection wizard
+# Interactive data collection wizard
 #
 # @return void
-function repowizard_start() {
+repowizard_start() {
+	local data_ok exitprog
+
 	repowizard_step1_service
 	repowizard_step2_remotename
 	repowizard_step3_credentials
 	repowizard_step4_repoaccess
 	# show overview about the collected data (unless everything was set by parameters)
-	if [ "${OPTION_REPOHOSTINGSERVICE}" == "" ] ||
-	   [ "${OPTION_REPOHOSTINGSERVICEPROJECTNAME}" == "" ] ||
-	   [ "${OPTION_REPOHOSTINGSERVICEUSERNAME}" == "" ] ||
-	   [ "${OPTION_REPOHOSTINGSERVICEPWD}" == "" ] ||
-	   [ "${OPTION_REPOHOSTINGSERVICEREPOACCESS}" == "" ]
+	if [ -z "${OPTION_REPOHOSTINGSERVICE}" ] ||
+	   [ -z "${OPTION_REPOHOSTINGSERVICEPROJECTNAME}" ] ||
+	   [ -z "${OPTION_REPOHOSTINGSERVICEUSERNAME}" ] ||
+	   [ -z "${OPTION_REPOHOSTINGSERVICEPWD}" ] ||
+	   [ -z "${OPTION_REPOHOSTINGSERVICEORGANIZATION}" ] ||
+	   [ -z "${OPTION_REPOHOSTINGSERVICEREPOACCESS}" ]
 	then
-		DATA_OK="n" #init
+		data_ok='n'
 		clear
-		echo "###############################################################################"
-		echo "# Puppet module creator: DVCS repository wizard data overview"
-		echo "###############################################################################"
-		echo -e "\033[1mRepository hosting service:\033[0m"
-		echo "${REPOHOSTINGSERVICE}"
-		echo ""
-		echo -e "\033[1mRepository/project name:\033[0m"
-		echo "${REPOHOSTINGSERVICEPROJECTNAME}"
-		echo ""
-		echo -e "\033[1mUsername:\033[0m"
-		echo "${REPOHOSTINGSERVICEUSERNAME} (password not shown for security reasons)"
-		echo ""
-		if [ "${REPOHOSTINGSERVICE}" == "github" ] ||
-		   [ "${REPOHOSTINGSERVICE}" == "bitbucket" ]
+		printf '###############################################################################\n'
+		printf '# Puppet module creator: DVCS repository wizard data overview\n'
+		printf '###############################################################################\n'
+		printf '\033[1mRepository hosting service:\033[0m\n%s\n\n' "${REPOHOSTINGSERVICE}"
+		printf '\033[1mRepository/project name:\033[0m\n%s\n\n' "${REPOHOSTINGSERVICEPROJECTNAME}"
+		printf '\033[1mUsername:\033[0m\n%s (password not shown for security reasons)\n\n' "${REPOHOSTINGSERVICEUSERNAME}"
+		if [ "${REPOHOSTINGSERVICE}" = 'github' ] ||
+		   [ "${REPOHOSTINGSERVICE}" = 'bitbucket' ]
 		then
-			if [ "${REPOHOSTINGSERVICE}" == "github" ]
+			if [ "${REPOHOSTINGSERVICE}" = 'github' ]
 			then
-				echo -e "\033[1mOrganization:\033[0m"
+				printf '\033[1mOrganization:\033[0m\n'
 			else
-				echo -e "\033[1mTeam:\033[0m"
+				printf '\033[1mTeam:\033[0m\n'
 			fi
-			if [ "${REPOHOSTINGSERVICEORGANIZATION}" == "" ]
+			if [ -z "${REPOHOSTINGSERVICEORGANIZATION}" ]
 			then
-				echo "(none)"
+				printf '(none)\n'
 			else
-				echo "${REPOHOSTINGSERVICEORGANIZATION}"
+				printf '%s\n' "${REPOHOSTINGSERVICEORGANIZATION}"
 			fi
-			echo ""
+			printf '\n'
 		fi
-		echo -e "\033[1mRepository access:\033[0m"
-		echo "${REPOHOSTINGSERVICEREPOACCESS}"
-		echo ""
-		echo -n "Is this correct? [y|n]: "
-		read DATA_OK
-		while [ ! "${DATA_OK}" == "y" ] &&
-			  [ ! "${DATA_OK}" == "Y" ] &&
-			  [ ! "${DATA_OK}" == "j" ] &&
-			  [ ! "${DATA_OK}" == "J" ]
+		printf '\033[1mRepository access:\033[0m\n%s\n\n' "${REPOHOSTINGSERVICEREPOACCESS}"
+		printf 'Is this correct? [y|n]: '
+		read data_ok
+		while [ "${data_ok}" != 'y' ] &&
+		      [ "${data_ok}" != 'Y' ] &&
+		      [ "${data_ok}" != 'j' ] &&
+		      [ "${data_ok}" != 'J' ]
 		do
-			EXITPROG="n" #init
-			echo -n "Exit program? [y|n]: "
-			read EXITPROG
-			if [ "${EXITPROG}" == "y" ] ||
-			   [ "${EXITPROG}" == "Y" ] ||
-			   [ "${EXITPROG}" == "j" ] ||
-			   [ "${EXITPROG}" == "J" ]
+			exitprog='n'
+			printf 'Exit program? [y|n]: '
+			read exitprog
+			if [ "${exitprog}" = 'y' ] ||
+			   [ "${exitprog}" = 'Y' ] ||
+			   [ "${exitprog}" = 'j' ] ||
+			   [ "${exitprog}" = 'J' ]
 			then
-				echo ""
-				echo "Repository creation canceled by user. However, have fun with your new"
-				echo "Puppet module."
-				echo ""
+				printf 'Repository creation canceled by user. However, have fun with your new Puppet\n'
+				printf 'module.\n\n'
 				exit 0
 			fi
 			# once more with feeling...
@@ -662,43 +648,36 @@ function repowizard_start() {
 			repowizard_step3_credentials
 			repowizard_step4_repoaccess
 			clear
-			echo "###############################################################################"
-			echo "# Puppet module creator: DVCS repository wizard data overview"
-			echo "###############################################################################"
-			echo -e "\033[1mRepository hosting service:\033[0m"
-			echo "${REPOHOSTINGSERVICE}"
-			echo ""
-			echo -e "\033[1mRepository/project name:\033[0m"
-			echo "${REPOHOSTINGSERVICEPROJECTNAME}"
-			echo ""
-			echo -e "\033[1mUsername:\033[0m"
-			echo "${REPOHOSTINGSERVICEUSERNAME} (password not shown for security reasons)"
-			echo ""
-			if [ "${REPOHOSTINGSERVICE}" == "github" ] ||
-			   [ "${REPOHOSTINGSERVICE}" == "bitbucket" ]
+			printf '###############################################################################\n'
+			printf '# Puppet module creator: DVCS repository wizard data overview\n'
+			printf '###############################################################################\n'
+			printf '\033[1mRepository hosting service:\033[0m\n%s\n\n' "${REPOHOSTINGSERVICE}"
+			printf '\033[1mRepository/project name:\033[0m\n%s\n\n' "${REPOHOSTINGSERVICEPROJECTNAME}"
+			printf '\033[1mUsername:\033[0m\n%s (password not shown for security reasons)\n\n' "${REPOHOSTINGSERVICEUSERNAME}"
+			if [ "${REPOHOSTINGSERVICE}" = 'github' ] ||
+			   [ "${REPOHOSTINGSERVICE}" = 'bitbucket' ]
 			then
-				if [ "${REPOHOSTINGSERVICE}" == "github" ]
+				if [ "${REPOHOSTINGSERVICE}" = 'github' ]
 				then
-					echo -e "\033[1mOrganization:\033[0m"
+					printf '\033[1mOrganization:\033[0m\n'
 				else
-					echo -e "\033[1mTeam:\033[0m"
+					printf '\033[1mTeam:\033[0m\n'
 				fi
-				if [ "${REPOHOSTINGSERVICEORGANIZATION}" == "" ]
+				if [ -z "${REPOHOSTINGSERVICEORGANIZATION}" ]
 				then
-					echo "(none)"
+					printf '(none)\n'
 				else
-					echo "${REPOHOSTINGSERVICEORGANIZATION}"
+					printf '%s\n' "${REPOHOSTINGSERVICEORGANIZATION}"
 				fi
-				echo ""
+				printf '\n'
 			fi
-			echo -e "\033[1mRepository access:\033[0m"
-			echo "${REPOHOSTINGSERVICEREPOACCESS}"
-			echo ""
-			echo -n "Is this correct? [y|n]: "
-			read DATA_OK
+			printf '\033[1mRepository access:\033[0m\n%s\n\n' "${REPOHOSTINGSERVICEREPOACCESS}"
+			printf 'Is this correct? [y|n]: '
+			read data_ok
 		done
+		printf '\n'
 	fi
-	unset DATA_OK
+	unset data_ok
 }
 
 
@@ -708,92 +687,102 @@ function repowizard_start() {
 # This function is setting the global REPOHOSTINGSERVICE var. It is a helper of
 # the repowizard_start function.
 #
-# @return integer 0 if everything was fine, 1 if there was an error.
-function repowizard_step1_service() {
-	echo ""
-	echo "Please choose the service you want to use to host the repository for your"
-	echo "new module by typing the corresponding number:"
-	echo ""
-	REPOHOSTINGSERVICE="" # init the global var this wizard is for
+# @return integer 0 if executed successfully, 1 otherwise.
+repowizard_step1_service() {
+	local choice_ok list list_raw choice list_itemcount i ifs_save item_lower
 
-	local CHOICE="none" #init
-	local INDEX=0 # init
-	local IFS_SAVE=${IFS} # copy current IFS (Internal Field Separator)
-	IFS=$';'
-	local SERVICES="Bitbucket;GitHub"
-	for SERVICE in ${SERVICES}
+	printf '\n'
+	printf 'Please choose the service you want to use to host the repository for your\n'
+	printf 'new module by typing the corresponding number:\n'
+	printf '\n'
+	REPOHOSTINGSERVICE='' # init the global var this wizard is for
+
+	# show a list the user can choose from
+	list_raw='Bitbucket:GitHub'
+	list=''
+	choice='none'
+	i='1'
+	ifs_save="${IFS}" # copy current IFS (Internal Field Separator)
+	IFS=':'
+	for ITEM in ${list_raw}
 	do
-		# show
-		echo -n "- ${INDEX}: "
-		echo "${SERVICE}"
+		# show the item and its number
+		printf '  %s: %s\n' "${i}" "${ITEM}"
 
-		# pre-select service if parameter was specified
-		SERVICE_LOWER=$(echo -n ${SERVICE} | tr A-Z a-z) #lowercase with TR
-		OPTION_REPOHOSTINGSERVICE_LOWER=$(echo -n ${OPTION_REPOHOSTINGSERVICE} | tr A-Z a-z) #lowercase with TR
-		if [ "${OPTION_REPOHOSTINGSERVICE_LOWER}" == "${SERVICE_LOWER}" ] &&
-		   [ "${OPTION_REPOHOSTINGSERVICE_LOWER}" != "" ]
+		# pre-select item if specified by parameter
+		item_lower="$(printf '%s' "${ITEM}" | tr A-Z a-z)"
+		if [ -n "${item_lower}" ] &&
+		   [ "${item_lower}" = "$(printf '%s' "${OPTION_REPOHOSTINGSERVICE}" | tr A-Z a-z)" ]
 		then
-			local CHOICE=${INDEX}
+			choice="${i}"
 		fi
 
-		# store
-		local LIST[${INDEX}]=${SERVICE_LOWER}
-		let INDEX=${INDEX}+1
+		# store item in list (separated by ":")
+		list="${list}${item_lower}:"
+		i="$((${i}+1))"
 	done
-	unset SERVICE
-	unset INDEX
-	IFS=${IFS_SAVE} # restore IFS (Internal Field Separator)
-	unset IFS_SAVE
+	unset ITEM
+	unset i
+	IFS="${ifs_save}" # restore IFS (Internal Field Separator)
+	unset ifs_save
+	unset item_lower
+	list="$(printf '%s' "${list}" | sed 's,:$,,')" # strip trailing ":" separator
 
-	set +u # allow usage of uninitialized variables
-	if [ ${#LIST[@]} -eq 0 ]
+	# count list items
+	list_itemcount="$(printf '%s' "${list}" | sed 's/[^:]//g' | wc -m)" # count number of ":"
+	list_itemcount="$((list_itemcount+1))"
+	if [ "${list_itemcount}" -eq 0 ]
 	then
-		echo "" 1>&2
-		echo "Could not find any repository hosting services." 1>&2
+		printf '\n' 1>&2
+		printf 'Could not find any repository hosting services.\n' 1>&2
 		exit 1
-	elif [ ${#LIST[@]} -eq 1 ]
+	fi
+
+	# choose list item
+	printf '\n'
+	if [ "${list_itemcount}" -eq 1 ]
 	then
-		echo ""
-		echo "There is only one repository hosting service, therefore nothing to choose."
-		echo -n "Using ${LIST[0]}"
-		local CHOICE=0
-	elif [ "${CHOICE}" != "none" ]
+		choice="${list_itemcount}"
+		REPOHOSTINGSERVICE="$(printf '%s' "${list}" | cut -d ':' -f "${choice}")"
+		printf 'There is only one repository hosting service, therefore nothing to choose.\n'
+		printf 'Using "%s".\n' "${REPOHOSTINGSERVICE}"
+	elif [ "${choice}" != 'none' ]
 	then
-		echo ""
-		echo "Repository hosting service to use was specified by parameter."
-		echo "Using ${LIST[${CHOICE}]}"
+		REPOHOSTINGSERVICE="$(printf '%s' "${list}" | cut -d ':' -f "${choice}")"
+		printf 'Repository hosting service to use was specified by parameter.\n'
+		printf 'Using "%s".\n' "${REPOHOSTINGSERVICE}"
 	else
-		echo ""
-		if [ "${OPTION_REPOHOSTINGSERVICE}" != "" ] &&
-		   [ "${CHOICE}" == "none" ]
+		if [ -n "${OPTION_REPOHOSTINGSERVICE}" ] &&
+		   [ "${choice}" = 'none' ]
 		then
-			OPTION_REPOHOSTINGSERVICE=""
-			echo "-s: invalid value, ignoring it." 1>&2
+			OPTION_REPOHOSTINGSERVICE=''
+			printf '%s' '-s: ' 1>&2
+			printf 'invalid value, ignoring it.' 1>&2
 		fi
-		echo -n "Number identifying the repository hosting service to use? "
-		read CHOICE
-		local CHOICE_OK=false
-		while [ ${CHOICE_OK} != true ]
+		printf 'Number identifying the repository hosting service to use? '
+		read choice
+		choice_ok='0'
+		while [ "${choice_ok}" -ne 1 ]
 		do
-			if [ "${LIST[${CHOICE}]}" == "" ] ||
-			   [ "${CHOICE}" == "" ] ||
-			   [[ ! "${CHOICE}" =~ ^[0-9]*$ ]]
+			if [ -z "${choice}" ] ||
+			   ! printf '%s' "${choice}" | grep -E -q -e '^[0-9]*$' ||
+			   [ "${choice}" -gt "${list_itemcount}" ] ||
+			   [ "${choice}" -lt 1 ]
 			then
-				echo -n "Invalid, try again: "
-				read CHOICE
+				printf 'Invalid, try again: '
+				read choice
 				continue 1
 			else
-				local CHOICE_OK=true
+				choice_ok='1'
 				break 1
 			fi
 		done
-		# clean up
-		unset CHOICE_OK
+		unset choice_ok
+		REPOHOSTINGSERVICE="$(printf '%s' "${list}" | cut -d ':' -f "${choice}")"
 	fi
-	REPOHOSTINGSERVICE=${LIST[${CHOICE}]} # var we need to process the repo creation
-	unset LIST
-	unset CHOICE
-	set -u # prevent usage of uninitialized variables
+
+	unset list
+	unset choice
 	return 0
 }
 
@@ -804,41 +793,43 @@ function repowizard_step1_service() {
 # This function is setting the global REPOHOSTINGSERVICEPROJECTNAME var. It is
 # a helper of the repowizard_start function.
 #
-# @return integer 0 if everything was fine, 1 if there was an error.
-function repowizard_step2_remotename() {
-	REPOHOSTINGSERVICEPROJECTNAME="" # init the global var this wizard is for
-	if [ "${OPTION_REPOHOSTINGSERVICEPROJECTNAME}" != "" ]
+# @return integer 0 if executed successfully, 1 otherwise.
+repowizard_step2_remotename() {
+	local repohostingserviceprojectname_ok
+
+	REPOHOSTINGSERVICEPROJECTNAME='' # init the global var this wizard is for
+	if [ -n "${OPTION_REPOHOSTINGSERVICEPROJECTNAME}" ]
 	then
-		echo ""
-		echo "Name of the new remote repository was specified by parameter."
-		echo "Using '${OPTION_REPOHOSTINGSERVICEPROJECTNAME}'."
-		REPOHOSTINGSERVICEPROJECTNAME=${OPTION_REPOHOSTINGSERVICEPROJECTNAME}
+		printf '\n'
+		printf 'Name of the new remote repository was specified by parameter.\n'
+		printf 'Using "%s".\n' "${OPTION_REPOHOSTINGSERVICEPROJECTNAME}"
+		REPOHOSTINGSERVICEPROJECTNAME="${OPTION_REPOHOSTINGSERVICEPROJECTNAME}"
 	else
 		REPOHOSTINGSERVICEPROJECTNAME_DEFAULT="puppet-module-${NEWMODNAME}"
-		echo ""
-		echo ""
-		echo "NOTE: most hosting services are restricting their project names alphanumeric"
-		echo "      characters, underscores and minus; that is, they have to match the"
-		echo "      pattern '^[a-zA-Z0-9_\-]*$'"
-		echo ""
-		echo    "Please enter the name for your new ${REPOHOSTINGSERVICE} project (just press [ENTER]"
-		echo -n "for '${REPOHOSTINGSERVICEPROJECTNAME_DEFAULT}'): "
+		printf '\n'
+		printf '\n'
+		printf 'NOTE: most hosting services are restricting their project names alphanumeric\n'
+		printf '      characters, underscores and minus; that is, they have to match the\n'
+		printf '      pattern '\''^[a-zA-Z0-9_\-]*$'\''\n'
+		printf '\n'
+		printf 'Please enter the name for your new %s project (just press [ENTER]\n' "${REPOHOSTINGSERVICE}"
+		printf 'for "%s"): ' "${REPOHOSTINGSERVICEPROJECTNAME_DEFAULT}"
 		read REPOHOSTINGSERVICEPROJECTNAME
-		local REPOHOSTINGSERVICEPROJECTNAME_OK=false
-		while [ ${REPOHOSTINGSERVICEPROJECTNAME_OK} != true ]
+		repohostingserviceprojectname_ok='0'
+		while [ "${repohostingserviceprojectname_ok}" -ne 1 ]
 		do
-			if [ "${REPOHOSTINGSERVICEPROJECTNAME}" == "" ]
+			if [ -z "${REPOHOSTINGSERVICEPROJECTNAME}" ]
 			then
-				# use defual if user just pressed [ENTER]
-				REPOHOSTINGSERVICEPROJECTNAME=${REPOHOSTINGSERVICEPROJECTNAME_DEFAULT}
+				# use default if user just pressed [ENTER]
+				REPOHOSTINGSERVICEPROJECTNAME="${REPOHOSTINGSERVICEPROJECTNAME_DEFAULT}"
 			fi
-			if [[ ! "${REPOHOSTINGSERVICEPROJECTNAME}" =~ ^[a-zA-Z0-9_\-]*$ ]] # don't forget to update the parameter check if you change something here!
+			if ! printf '%s' "${REPOHOSTINGSERVICEPROJECTNAME}" | grep -E -q -e '^[a-zA-Z0-9_\-]*$' # don't forget to update the parameter check if you change something here!
 			then
-				echo -n "Invalid, try again: "
+				printf 'Invalid, try again: '
 				read REPOHOSTINGSERVICEPROJECTNAME
 				continue 1
 			else
-				local REPOHOSTINGSERVICEPROJECTNAME_OK=true
+				 repohostingserviceprojectname_ok='1'
 				break 1
 			fi
 		done
@@ -855,133 +846,148 @@ function repowizard_step2_remotename() {
 # REPOHOSTINGSERVICEPWD and REPOHOSTINGSERVICEORGANIZATION var. It is a helper
 # of the repowizard_start function.
 #
-# @return integer 0 if everything was fine, 1 if there was an error.
-function repowizard_step3_credentials() {
+# @return integer 0 if executed successfully, 1 otherwise.
+repowizard_step3_credentials() {
+	local repohostingserviceusername_ok repohostingservicepwd_ok \
+	      repohostingserviceorganization_ok
+
 	# username
-	REPOHOSTINGSERVICEUSERNAME="" # init the global var this wizard is for
-	if [ "${OPTION_REPOHOSTINGSERVICEUSERNAME}" != "" ]
+	REPOHOSTINGSERVICEUSERNAME='' # init the global var this wizard is for
+	if [ -n "${OPTION_REPOHOSTINGSERVICEUSERNAME}" ]
 	then
-		echo ""
-		echo "Username to authenticate you on the repository hosting service was specified"
-		echo "by parameter."
-		echo "Using '${OPTION_REPOHOSTINGSERVICEUSERNAME}'."
-		REPOHOSTINGSERVICEUSERNAME=${OPTION_REPOHOSTINGSERVICEUSERNAME}
+		printf '\n'
+		printf 'Username for repository hosting service authentication was specified by\n'
+		printf 'parameter. Using "%s".\n' "${OPTION_REPOHOSTINGSERVICEUSERNAME}"
+		REPOHOSTINGSERVICEUSERNAME="${OPTION_REPOHOSTINGSERVICEUSERNAME}"
 	else
-		echo ""
-		echo -n "Please enter the username to use to authenticate you on ${REPOHOSTINGSERVICE}: "
+		printf '\n'
+		printf 'Please enter the username to use to authenticate you on %s: ' "${REPOHOSTINGSERVICE}"
 		read REPOHOSTINGSERVICEUSERNAME
-		local REPOHOSTINGSERVICEUSERNAME_OK=false
-		while [ ${REPOHOSTINGSERVICEUSERNAME_OK} != true ]
+		repohostingserviceusername_ok='0'
+		while [ "${repohostingserviceusername_ok}" -ne 1 ]
 		do
-			if [ "${REPOHOSTINGSERVICEUSERNAME}" == "" ]
+			if [ -z "${REPOHOSTINGSERVICEUSERNAME}" ]
 			then
-				echo -n "Invalid, try again: "
+				printf 'Invalid, try again: '
 				read REPOHOSTINGSERVICEUSERNAME
 				continue 1
 			else
-				local REPOHOSTINGSERVICEUSERNAME_OK=true
+				repohostingserviceusername_ok='1'
 				break 1
 			fi
 		done
 	fi
 
 	# password
-	REPOHOSTINGSERVICEPWD="" # init the global var this wizard is for
-	if [ "${OPTION_REPOHOSTINGSERVICEPWD}" != "" ]
+	REPOHOSTINGSERVICEPWD='' # init the global var this wizard is for
+	if [ -n "${OPTION_REPOHOSTINGSERVICEPWD}" ]
 	then
-		echo ""
-		echo "Password to authenticate you on the repository hosting service was specified"
-		echo "by parameter."
-		echo "Using '(password not shown for security reasons)'."
-		REPOHOSTINGSERVICEPWD=${OPTION_REPOHOSTINGSERVICEPWD}
+		printf '\n'
+		printf 'Password for repository hosting service authentication was specified by\n'
+		printf 'parameter. Using "(password not shown for security reasons)".\n'
+		REPOHOSTINGSERVICEPWD="${OPTION_REPOHOSTINGSERVICEPWD}"
 	else
-		echo ""
-		echo    "Please enter the password belonging your username to authenticate you"
-		echo -n "on ${REPOHOSTINGSERVICE} (won't be shown for security reasons): "
+		printf '\n'
+		printf 'Please enter the password belonging your username to authenticate you\n'
+		printf 'on %s (won'\''t be shown for security reasons): ' "${REPOHOSTINGSERVICE}"
 		stty -echo
 		read REPOHOSTINGSERVICEPWD
 		stty echo
-		echo ""
-		local REPOHOSTINGSERVICEPWD_OK=false
-		while [ ${REPOHOSTINGSERVICEPWD_OK} != true ]
+		printf '\n'
+		repohostingservicepwd_ok='0'
+		while [ "${repohostingservicepwd_ok}" -ne 1 ]
 		do
-			if [ "${REPOHOSTINGSERVICEPWD}" == "" ]
+			if [ -z "${REPOHOSTINGSERVICEPWD}" ]
 			then
-				echo -n "Invalid, try again: "
+				printf 'Invalid, try again: '
 				stty -echo
 				read REPOHOSTINGSERVICEPWD
 				stty echo
-				echo ""
+				printf '\n'
 				continue 1
 			else
-				local REPOHOSTINGSERVICEPWD_OK=true
+				repohostingservicepwd_ok='1'
 				break 1
 			fi
 		done
 	fi
 
 	# organization
-	REPOHOSTINGSERVICEORGANIZATION="" # init the global var this wizard is for
-	if [ "${REPOHOSTINGSERVICE}" == "github" ]
+	REPOHOSTINGSERVICEORGANIZATION='' # init the global var this wizard is for
+	if [ "${REPOHOSTINGSERVICE}" = 'github' ]
 	then
-		if [ "${OPTION_REPOHOSTINGSERVICEORGANIZATION}" != "" ]
+		if [ -n "${OPTION_REPOHOSTINGSERVICEORGANIZATION}" ]
 		then
-			echo ""
-			echo "GitHub Organization your user belongs to was specified by parameter."
-			echo "Using '${OPTION_REPOHOSTINGSERVICEORGANIZATION}'."
-			REPOHOSTINGSERVICEORGANIZATION=${OPTION_REPOHOSTINGSERVICEORGANIZATION}
+			printf '\n'
+			printf 'GitHub Organization your user belongs to was specified by parameter.\n'
+			if [ "${OPTION_REPOHOSTINGSERVICEORGANIZATION}" = 'none' ] ||
+			   [ "${OPTION_REPOHOSTINGSERVICEORGANIZATION}" = 'false' ]
+			then
+				REPOHOSTINGSERVICEORGANIZATION=''
+				printf 'Using "(none)" (=no organization is used).\n'
+			else
+				REPOHOSTINGSERVICEORGANIZATION="${OPTION_REPOHOSTINGSERVICEORGANIZATION}"
+				printf 'Using "%s".\n' "${OPTION_REPOHOSTINGSERVICEORGANIZATION}"
+			fi
 		else
-			echo ""
-			echo "GitHub provides organizations (see http://j.mp/d2PFSw for information). If"
-			echo "you want to create the new repository in the organization's account instead"
-			echo "of your personal one, you can enter the organization name here. Leave blank"
-			echo "for none."
-			echo ""
-			echo -n "Please enter the GitHub organization (press [ENTER] if none): "
+			printf '\n'
+			printf 'GitHub provides organizations (see http://j.mp/d2PFSw for information). If\n'
+			printf 'you want to create the new repository in the organization'\''s account instead\n'
+			printf 'of your personal one, you can enter the organization name here. Leave blank\n'
+			printf 'for none.\n'
+			printf '\n'
+			printf 'Please enter the GitHub organization (press [ENTER] if none): '
 			read REPOHOSTINGSERVICEORGANIZATION
-			local REPOHOSTINGSERVICEORGANIZATION_OK=false
-			while [ ${REPOHOSTINGSERVICEORGANIZATION_OK} != true ]
+			repohostingserviceorganization_ok='0'
+			while [ "${repohostingserviceorganization_ok}" -ne 1 ]
 			do
-				if [[ ! "${REPOHOSTINGSERVICEORGANIZATION}" =~ ^[a-zA-Z][a-zA-Z0-9\-]*$ ]] && # don't forget to update the parameter check if you change something here!
-				   [ "${REPOHOSTINGSERVICEORGANIZATION}" != "" ]
+				if [ -n "${REPOHOSTINGSERVICEORGANIZATION}" ] &&
+				   ! printf '%s' "${REPOHOSTINGSERVICEORGANIZATION}" | grep -E -q -e '^[a-zA-Z][a-zA-Z0-9\-]*$' # don't forget to update the parameter check if you change something here!
 				then
-					echo -n "Invalid, try again: "
+					printf 'Invalid, try again: '
 					read REPOHOSTINGSERVICEORGANIZATION
 					continue 1
 				else
-					local REPOHOSTINGSERVICEORGANIZATION_OK=true
+					repohostingserviceorganization_ok='1'
 					break 1
 				fi
 			done
 		fi
-	elif [ "${REPOHOSTINGSERVICE}" == "bitbucket" ]
+	elif [ "${REPOHOSTINGSERVICE}" = 'bitbucket' ]
 	then
-		if [ "${OPTION_REPOHOSTINGSERVICEORGANIZATION}" != "" ]
+		if [ -n "${OPTION_REPOHOSTINGSERVICEORGANIZATION}" ]
 		then
-			echo ""
-			echo "Bitbucket Team your user belongs to was specified by parameter."
-			echo "Using '${OPTION_REPOHOSTINGSERVICEORGANIZATION}'."
-			REPOHOSTINGSERVICEORGANIZATION=${OPTION_REPOHOSTINGSERVICEORGANIZATION}
+			printf '\n'
+			printf 'Bitbucket Team your user belongs to was specified by parameter.\n'
+			if [ "${OPTION_REPOHOSTINGSERVICEORGANIZATION}" = 'none' ] ||
+			   [ "${OPTION_REPOHOSTINGSERVICEORGANIZATION}" = 'false' ]
+			then
+				REPOHOSTINGSERVICEORGANIZATION=''
+				printf 'Using "(none)" (=no team is used).\n'
+			else
+				REPOHOSTINGSERVICEORGANIZATION="${OPTION_REPOHOSTINGSERVICEORGANIZATION}"
+				printf 'Using "%s".\n' "${OPTION_REPOHOSTINGSERVICEORGANIZATION}"
+			fi
 		else
-			echo ""
-			echo "Bitbucket provides teams (see http://j.mp/LHiSK9 for information). If"
-			echo "you want to create the new repository in the teams's account instead"
-			echo "of your personal one, you can enter the team name here. Leave blank"
-			echo "for none."
-			echo ""
-			echo -n "Please enter the Bitbucket team (press [ENTER] if none): "
+			printf '\n'
+			printf 'Bitbucket provides teams (see http://j.mp/LHiSK9 for information). If\n'
+			printf 'you want to create the new repository in the teams'\''s account instead\n'
+			printf 'of your personal one, you can enter the team name here. Leave blank\n'
+			printf 'for none.\n'
+			printf '\n'
+			printf 'Please enter the Bitbucket team (press [ENTER] if none): '
 			read REPOHOSTINGSERVICEORGANIZATION
-			local REPOHOSTINGSERVICEORGANIZATION_OK=false
-			while [ ${REPOHOSTINGSERVICEORGANIZATION_OK} != true ]
+			repohostingserviceorganization_ok='0'
+			while [ "${repohostingserviceorganization_ok}" -ne 1 ]
 			do
-				if [[ ! "${REPOHOSTINGSERVICEORGANIZATION}" =~ ^[a-zA-Z][a-zA-Z0-9\-]*$ ]] && # don't forget to update the parameter check if you change something here!
-				   [ "${REPOHOSTINGSERVICEORGANIZATION}" != "" ]
+				if [ -n "${REPOHOSTINGSERVICEORGANIZATION}" ] &&
+				   ! printf '%s' "${REPOHOSTINGSERVICEORGANIZATION}" | grep -E -q -e '^[a-zA-Z][a-zA-Z0-9\-]*$' # don't forget to update the parameter check if you change something here!
 				then
-					echo -n "Invalid, try again: "
+					printf 'Invalid, try again: '
 					read REPOHOSTINGSERVICEORGANIZATION
 					continue 1
 				else
-					local REPOHOSTINGSERVICEORGANIZATION_OK=true
+					repohostingserviceorganization_ok='1'
 					break 1
 				fi
 			done
@@ -998,52 +1004,54 @@ function repowizard_step3_credentials() {
 # This function is setting the global REPOHOSTINGSERVICEREPOACCESS var. It is a
 # helper of the repowizard_start function.
 #
-# @return integer 0 if everything was fine, 1 if there was an error.
-function repowizard_step4_repoaccess() {
-	REPOHOSTINGSERVICEREPOACCESS="" # init the global var this wizard is for
-	if [ "${OPTION_REPOHOSTINGSERVICEREPOACCESS}" != "" ]
+# @return integer 0 if executed successfully, 1 otherwise.
+repowizard_step4_repoaccess() {
+	local choice_ok
+
+	REPOHOSTINGSERVICEREPOACCESS='' # init the global var this wizard is for
+	if [ -n "${OPTION_REPOHOSTINGSERVICEREPOACCESS}" ]
 	then
-		echo ""
-		echo "Who has access to the new remote repository was specified by parameter."
-		echo "Using '${OPTION_REPOHOSTINGSERVICEREPOACCESS}'."
-		REPOHOSTINGSERVICEREPOACCESS=${OPTION_REPOHOSTINGSERVICEREPOACCESS}
+		printf '\n'
+		printf 'Who has access to the new remote repository was specified by parameter.\n'
+		printf 'Using "%s".\n' "${OPTION_REPOHOSTINGSERVICEREPOACCESS}"
+		REPOHOSTINGSERVICEREPOACCESS="${OPTION_REPOHOSTINGSERVICEREPOACCESS}"
 	else
-		echo ""
-		if [ "${REPOHOSTINGSERVICE}" == "github" ]
+		printf '\n'
+		printf 'You have to decide who has access to the new remote repository. Please\n'
+		printf 'choose the rule you want to use by typing the corresponding number:\n'
+		printf '\n'
+		printf '  0: public (anyone has read access, e.g. for Open Source)\n'
+		printf '  1: private (only you and the people you specify have access)\n'
+		printf '\n'
+		if [ "${REPOHOSTINGSERVICE}" = 'github' ]
 		then
-			echo -e "\033[1mNOTE:\033[0m You need a fitting GitHub plan to be able to create private"
-			echo    "      repositories."
-			echo    ""
+			printf '\033[1mNOTE:\033[0m You need a fitting GitHub plan to be able to create private\n'
+			printf '      repositories.\n'
+			printf '\n'
 		fi
-		echo "You have to decide who has access to the new remote repository. Please"
-		echo "choose the rule you want to use by typing the corresponding number:"
-		echo ""
-		echo "- 0: public (anyone has read access, e.g. for Open Source)"
-		echo "- 1: private (only I and the people I specify have access)"
-		echo ""
-		echo -n "Number identifying the access rule to use? "
+		printf 'Number identifying the access rule to use? '
 		read CHOICE
-		local CHOICE_OK=false
-		while [ ${CHOICE_OK} != true ]
+		choice_ok='0'
+		while [ "${choice_ok}" -ne 1 ]
 		do
-			if [ "${CHOICE}" == "" ] ||
-			   [[ ! "${CHOICE}" =~ ^[0-1]*$ ]]
+			if [ -z "${CHOICE}" ] ||
+			   ! printf '%s' "${CHOICE}" | grep -E -q -e '^[0-1]*$'
 			then
-				echo -n "Invalid, try again: "
+				printf 'Invalid, try again: '
 				read CHOICE
 				continue 1
 			else
-				local CHOICE_OK=true
+				choice_ok='1'
 				break 1
 			fi
 		done
-		# clean up
-		unset CHOICE_OK
-		if [ "${CHOICE}" == "0" ]
+		unset choice_ok
+
+		if [ "${CHOICE}" -eq 0 ]
 		then
-			REPOHOSTINGSERVICEREPOACCESS="public" # var we need to process the repo creation
+			REPOHOSTINGSERVICEREPOACCESS='public' # var we need to process the repo creation
 		else
-			REPOHOSTINGSERVICEREPOACCESS="private" # var we need to process the repo creation
+			REPOHOSTINGSERVICEREPOACCESS='private' # var we need to process the repo creation
 		fi
 		unset CHOICE
 	fi
@@ -1054,62 +1062,64 @@ function repowizard_step4_repoaccess() {
 ####
 # Creates a repository/project on GitHub.
 #
-# @return integer 0 if everything was fine, 1 if there was an error.
+# @return integer 0 if executed successfully, 1 otherwise.
 # @link http://developer.github.com/v3/repos/
 # @link http://developer.github.com/v3/#authentication
 # @link http://blog.httpwatch.com/2009/02/20/how-secure-are-query-strings-over-https/
-function github_createrepo() {
+github_createrepo() {
+	local api_targeturl param_name param_description param_private param_issues \
+	      param_wiki param_downloads response
+
 	# init
-	local API_TARGETURL="https://api.github.com/user/repos"
-	local PARAM_NAME=${REPOHOSTINGSERVICEPROJECTNAME}
-	local PARAM_DESCRIPTION="Puppet module ${NEWMODNAME}"
-	local PARAM_PRIVATE="true"
-	local PARAM_ISSUES="false"
-	local PARAM_WIKI="false"
-	local PARAM_DOWNLOADS="false"
+	api_targeturl='https://api.github.com/user/repos'
+	param_name="${REPOHOSTINGSERVICEPROJECTNAME}"
+	param_description="Puppet module ${NEWMODNAME}"
+	param_private='true'
+	param_issues='false'
+	param_wiki='false'
+	param_downloads='false'
 
 	# adjust some parameters
-	if [ "${REPOHOSTINGSERVICEORGANIZATION}" != "" ]
+	if [ -n "${REPOHOSTINGSERVICEORGANIZATION}" ]
 	then
-		local API_TARGETURL="https://api.github.com/orgs/${REPOHOSTINGSERVICEORGANIZATION}/repos"
+		api_targeturl="https://api.github.com/orgs/${REPOHOSTINGSERVICEORGANIZATION}/repos"
 	fi
-	if [ "${REPOHOSTINGSERVICEREPOACCESS}" == "public" ]
+	if [ "${REPOHOSTINGSERVICEREPOACCESS}" = 'public' ]
 	then
-		local PARAM_PRIVATE="false"
+		param_private='false'
 	fi
 
 	# let's go
-	echo ""
-	if [ "${REPOHOSTINGSERVICEORGANIZATION}" == "" ]
+	printf '\n'
+	if [ -z "${REPOHOSTINGSERVICEORGANIZATION}" ]
 	then
-		echo "Creating GitHub project: ${REPOHOSTINGSERVICEUSERNAME}/${REPOHOSTINGSERVICEPROJECTNAME}"
+		printf 'Creating GitHub project: %s\n' "${REPOHOSTINGSERVICEUSERNAME}/${REPOHOSTINGSERVICEPROJECTNAME}"
 	else
-		echo "Creating GitHub project: ${REPOHOSTINGSERVICEORGANIZATION}/${REPOHOSTINGSERVICEPROJECTNAME}"
+		printf 'Creating GitHub project: %s\n' "${REPOHOSTINGSERVICEORGANIZATION}/${REPOHOSTINGSERVICEPROJECTNAME}"
 	fi
-	local RESPONSE=$(curl -# --request POST --user "${REPOHOSTINGSERVICEUSERNAME}:${REPOHOSTINGSERVICEPWD}" --data "{\"name\":\"${PARAM_NAME}\",\"description\":\"${PARAM_DESCRIPTION}\",\"private\":${PARAM_PRIVATE},\"has_issues\":${PARAM_ISSUES},\"has_wiki\":${PARAM_WIKI},\"has_downloads\":${PARAM_DOWNLOADS}}" ${API_TARGETURL})
+	response="$(curl -# --request POST --user "${REPOHOSTINGSERVICEUSERNAME}:${REPOHOSTINGSERVICEPWD}" --data "{\"name\":\"${param_name}\",\"description\":\"${param_description}\",\"private\":${param_private},\"has_issues\":${param_issues},\"has_wiki\":${param_wiki},\"has_downloads\":${param_downloads}}" "${api_targeturl}")"
 	if [ $? -eq 7 ] # failed to connect to host.
 	then
-		echo ""
-		echo -e "\033[31mCreating the new project on GitHub failed.\033[0m (failed to connect to host)" 1>&2
-		echo ""
+		printf '\n'
+		printf '\033[31mCreating the new project on GitHub failed.\033[0m (failed to connect to host)\n' 1>&2
+		printf '\n'
 		return 1
-	elif [ "${RESPONSE}" == "" ] ||
-	     [[ "${RESPONSE}" == *"ad credentials"* ]] ||
-	     [[ "${RESPONSE}" == *"Error"* ]] ||
-	     [[ "${RESPONSE}" == *"error"* ]]
+	elif [ -z "${response}" ] ||
+	     printf '%s' "${response}" | grep -F -q -i -e 'Bad credentials' ||
+	     printf '%s' "${response}" | grep -F -q -i -e 'Error'
 	then
-		echo ""
-		echo -e "\033[31mCreating the new project on GitHub failed.\033[0m" 1>&2
-		if [ "${RESPONSE}" != "" ]
+		printf '\n'
+		printf '\033[31mCreating the new project on GitHub failed.\033[0m (maybe bad credentials?)\n' 1>&2
+		if [ -n "${response}" ]
 		then
-			echo "Original GitHub response:" 1>&2
-			echo "" 1>&2
-			echo ${RESPONSE} 1>&2
-			echo "" 1>&2
+			printf 'Original GitHub response:\n' 1>&2
+			printf '\n' 1>&2
+			printf '%s\n' ${response} 1>&2
+			printf '\n' 1>&2
 		fi
 		return 1
 	else
-		echo -e "\033[32mDone.\033[0m"
+		printf '\033[32mDone.\033[0m\n'
 	fi
 	return 0
 }
@@ -1118,62 +1128,65 @@ function github_createrepo() {
 ####
 # Creates a repository on Bitbucket.
 #
-# @return integer 0 if everything was fine, 1 if there was an error.
+# @return integer 0 if executed successfully, 1 otherwise.
 # @link http://confluence.atlassian.com/display/BITBUCKET/Repositories#Repositories-CreatingaNewRepository
-function bitbucket_createrepo() {
+bitbucket_createrepo() {
+	local api_targeturl param_name param_description param_private param_issues \
+	      param_wiki param_scm param_owner response
+
 	# init
-	local API_TARGETURL="https://api.bitbucket.org/1.0/repositories/"
-	local PARAM_NAME=${REPOHOSTINGSERVICEPROJECTNAME}
-	local PARAM_DESCRIPTION="Puppet module ${NEWMODNAME}"
-	local PARAM_PRIVATE="true"
-	local PARAM_ISSUES="false"
-	local PARAM_WIKI="false"
-	local PARAM_SCM="git"
-	local PARAM_OWNER="${REPOHOSTINGSERVICEORGANIZATION}"
+	api_targeturl='https://api.bitbucket.org/1.0/repositories/'
+	param_name="${REPOHOSTINGSERVICEPROJECTNAME}"
+	param_description="Puppet module ${NEWMODNAME}"
+	param_private='true'
+	param_issues='false'
+	param_wiki='false'
+	param_scm="git"
+	param_owner="${REPOHOSTINGSERVICEORGANIZATION}"
 
 	# adjust some parameters
-	if [ "${REPOHOSTINGSERVICEREPOACCESS}" == "public" ]
+	if [ "${REPOHOSTINGSERVICEREPOACCESS}" = 'public' ]
 	then
-		local PARAM_PRIVATE="false"
+		param_private='false'
 	fi
 
 	# let's go
-	echo ""
-	if [ "${REPOHOSTINGSERVICEORGANIZATION}" == "" ]
+	printf '\n'
+	if [ -z "${REPOHOSTINGSERVICEORGANIZATION}" ]
 	then
-		echo "Creating Bitbucket project: ${REPOHOSTINGSERVICEUSERNAME}/${REPOHOSTINGSERVICEPROJECTNAME}"
+		printf 'Creating Bitbucket project: %s\n' "${REPOHOSTINGSERVICEUSERNAME}/${REPOHOSTINGSERVICEPROJECTNAME}"
 	else
-		echo "Creating Bitbucket project: ${REPOHOSTINGSERVICEORGANIZATION}/${REPOHOSTINGSERVICEPROJECTNAME}"
+		printf 'Creating Bitbucket project: %s\n' "${REPOHOSTINGSERVICEORGANIZATION}/${REPOHOSTINGSERVICEPROJECTNAME}"
 	fi
-	if [ "${REPOHOSTINGSERVICEORGANIZATION}" == "" ]
+	if [ -z "${REPOHOSTINGSERVICEORGANIZATION}" ]
 	then
-		local RESPONSE=$(curl -# --request POST --user "${REPOHOSTINGSERVICEUSERNAME}:${REPOHOSTINGSERVICEPWD}" --data "name=${PARAM_NAME}" --data "is_private=${PARAM_PRIVATE}" --data "scm=${PARAM_SCM}" --data "description=${PARAM_DESCRIPTION}" --data "has_issues=${PARAM_ISSUES}" --data "has_wiki=${PARAM_WIKI}" ${API_TARGETURL})
+		response="$(curl -# --request POST --user "${REPOHOSTINGSERVICEUSERNAME}:${REPOHOSTINGSERVICEPWD}" --data "name=${param_name}" --data "is_private=${param_private}" --data "scm=${param_scm}" --data "description=${param_description}" --data "has_issues=${param_issues}" --data "has_wiki=${param_wiki}" "${api_targeturl}")"
 	else
-		local RESPONSE=$(curl -# --request POST --user "${REPOHOSTINGSERVICEUSERNAME}:${REPOHOSTINGSERVICEPWD}" --data "name=${PARAM_NAME}" --data "is_private=${PARAM_PRIVATE}" --data "scm=${PARAM_SCM}" --data "description=${PARAM_DESCRIPTION}" --data "has_issues=${PARAM_ISSUES}" --data "has_wiki=${PARAM_WIKI}" --data "owner=${PARAM_OWNER}" ${API_TARGETURL})
+		response="$(curl -# --request POST --user "${REPOHOSTINGSERVICEUSERNAME}:${REPOHOSTINGSERVICEPWD}" --data "name=${param_name}" --data "is_private=${param_private}" --data "scm=${param_scm}" --data "description=${param_description}" --data "has_issues=${param_issues}" --data "has_wiki=${param_wiki}" --data "owner=${param_owner}" "${api_targeturl}")"
 	fi
 
 	if [ $? -eq 7 ] # failed to connect to host.
 	then
-		echo ""
-		echo -e "\033[31mCreating the new project on Bitbucket failed.\033[0m (failed to connect to host)" 1>&2
-		echo ""
+		printf '\n'
+		printf '\033[31mCreating the new project on Bitbucket failed.\033[0m (failed to connect to host)\n' 1>&2
+		printf '\n'
 		return 1
-	elif [ "${RESPONSE}" == "" ] ||
-	     [[ "${RESPONSE}" == *"ad Request"* ]] ||
-	     [[ "${RESPONSE}" == *"rrorlist"* ]]
+	elif [ -z "${response}" ] ||
+	     printf '%s' "${response}" | grep -F -q -i -e 'Bad Request' ||
+	     printf '%s' "${response}" | grep -F -q -i -e 'Errorlist'
 	then
-		echo ""
-		echo -e "\033[31mCreating the new project on Bitbucket failed.\033[0m (maybe bad credentials?)" 1>&2
-		if [ "${RESPONSE}" != "" ]
+		printf '\n'
+		printf '\033[31mCreating the new project on Bitbucket failed.\033[0m (maybe bad credentials?)\n' 1>&2
+		if [ -n "${response}" ]
 		then
-			echo "Original Bitbucket response:" 1>&2
-			echo "" 1>&2
-			echo ${RESPONSE} 1>&2
-			echo "" 1>&2
+			printf 'Original Bitbucket response:\n' 1>&2
+			printf '\n' 1>&2
+			printf '%s\n' ${response} 1>&2
+			printf '\n' 1>&2
 		fi
 		return 1
 	else
-		echo -e "\033[32mDone.\033[0m"
+		printf '\033[32mDone.\033[0m\n'
 	fi
 	return 0
 }
@@ -1185,19 +1198,19 @@ function bitbucket_createrepo() {
 ################################################################################
 set +u # allow usage of uninitialized variables
 
-ENV_AUTHOREMAIL="" #init value of PUPPET_BOILERPLATE_AUTHORFULLNAME
-ENV_AUTHORFULLNAME="" #init value of PUPPET_BOILERPLATE_AUTHOREMAIL
+ENV_AUTHOREMAIL=''    # init value of PUPPET_BOILERPLATE_AUTHORFULLNAME
+ENV_AUTHORFULLNAME='' # init value of PUPPET_BOILERPLATE_AUTHOREMAIL
 
 # name of the author
 ENV_AUTHORFULLNAME="${PUPPET_BOILERPLATE_AUTHORFULLNAME}"
 
 # email address of the author
 ENV_AUTHOREMAIL="${PUPPET_BOILERPLATE_AUTHOREMAIL}"
-if [ "${ENV_AUTHOREMAIL}" != "" ] &&
-   [[ "${ENV_AUTHOREMAIL}" != *"@"* ]] # don't forget to update the interactive and parameter variable check if you change something here!
+if [ -n "${ENV_AUTHOREMAIL}" ] &&
+   ! printf '%s' "${ENV_AUTHOREMAIL}" | grep -F -q -e '@' # don't forget to update the interactive and parameter variable check if you change something here!
 then
-	ENV_AUTHOREMAIL=""
-	echo "PUPPET_BOILERPLATE_AUTHOREMAIL: invalid value, ignoring it." 1>&2
+	ENV_AUTHOREMAIL=''
+	printf 'PUPPET_BOILERPLATE_AUTHOREMAIL: invalid value, ignoring it.\n' 1>&2
 fi
 
 
@@ -1207,224 +1220,264 @@ fi
 ################################################################################
 set +u # allow usage of uninitialized variables
 
-OPTION_AUTHORFULLNAME=""                   # init value of -a
-OPTION_BOILERPLATE=""                      # init value of -b
-OPTION_AUTHOREMAIL=""                      # init value of -e
-OPTION_NEWMODNAME=""                       # init value of -n
-OPTION_TARGETDIR=""                        # init value of -t
-OPTION_REPOHOSTINGSERVICE=""               # init value of -s
-OPTION_REPOHOSTINGSERVICEUSERNAME=""       # init value of -u
-OPTION_REPOHOSTINGSERVICEPWD=""            # init value of -p
-OPTION_REPOHOSTINGSERVICEORGANIZATION=""   # init value of -o
-OPTION_REPOHOSTINGSERVICEPROJECTNAME=""    # init value of -q
-OPTION_REPOHOSTINGSERVICEREPOACCESS=""     # init value of -r
+OPTION_AUTHORFULLNAME=''                   # init value of -a
+OPTION_BOILERPLATE=''                      # init value of -b
+OPTION_AUTHOREMAIL=''                      # init value of -e
+OPTION_NEWMODNAME=''                       # init value of -n
+OPTION_TARGETDIR=''                        # init value of -t
+OPTION_REPOHOSTINGSERVICE=''               # init value of -s
+OPTION_REPOHOSTINGSERVICEUSERNAME=''       # init value of -u
+OPTION_REPOHOSTINGSERVICEPWD=''            # init value of -p
+OPTION_REPOHOSTINGSERVICEORGANIZATION=''   # init value of -o
+OPTION_REPOHOSTINGSERVICEPROJECTNAME=''    # init value of -q
+OPTION_REPOHOSTINGSERVICEREPOACCESS=''     # init value of -r
 
 # parse options
 # always helpful: http://rsalveti.wordpress.com/2007/04/03/bash-parsing-arguments-with-getopts/
 OPTIND=1
-OPTION="" #init loop value
-while getopts ":a:b:e:n:t:s:u:p:o:q:r:h?" OPTION
+OPTION=''
+while getopts ':a:b:e:n:t:s:u:p:o:q:r:h' OPTION
 do
 	case "${OPTION}" in
 		# name of the author
-		"a")
-			OPTION_AUTHORFULLNAME=${OPTARG}
+		'a')
+			OPTION_AUTHORFULLNAME="${OPTARG}"
 			;;
 
 		# boilerplate to use
-		"b")
-			OPTION_BOILERPLATE=${OPTARG} # validation will be done by the listing code
+		'b')
+			OPTION_BOILERPLATE="${OPTARG}" # validation will be done by the listing code
 			;;
 
 		# email address of the author
-		"e")
-			OPTION_AUTHOREMAIL=${OPTARG}
-			if [[ "${OPTION_AUTHOREMAIL}" != *"@"* ]] # don't forget to update the interactive and environment variable check if you change something here!
+		'e')
+			OPTION_AUTHOREMAIL="${OPTARG}"
+			if ! printf '%s' "${OPTION_AUTHOREMAIL}" | grep -F -q -e '@' # don't forget to update the interactive and environment variable check if you change something here!
 			then
-				OPTION_AUTHOREMAIL=""
-				echo "-e: invalid value, ignoring it." 1>&2
+				OPTION_AUTHOREMAIL=''
+				printf '%s' '-'
+				printf '%s: invalid value, ignoring it.' "${OPTION}" 1>&2
 			fi
 			;;
 
 		# name for the new module
-		"n")
-			OPTION_NEWMODNAME=${OPTARG}
-			if [[ ! "${OPTION_NEWMODNAME}" =~ ^[a-z][a-z0-9_]*$ ]] # don't forget to update the interactive check if you change something here!
+		'n')
+			OPTION_NEWMODNAME="${OPTARG}"
+			if ! printf '%s' "${OPTION_NEWMODNAME}" | grep -E -q -e '^[a-z][a-z0-9_]*$' # don't forget to update the interactive check if you change something here!
 			then
-				OPTION_NEWMODNAME=""
-				echo "-n: invalid value, ignoring it." 1>&2
+				OPTION_NEWMODNAME=''
+				printf '%s' '-'
+				printf '%s: invalid value, ignoring it.' "${OPTION}" 1>&2
 			fi
 			;;
 
 		# targetdir, where to put the new module
-		"t")
-			OPTION_TARGETDIR=${OPTARG}
-			if [ "${OPTION_TARGETDIR}" != "/" ]
+		't')
+			OPTION_TARGETDIR="${OPTARG}"
+			if [ "${OPTION_TARGETDIR}" != '/' ]
 			then
-				OPTION_TARGETDIR="${OPTION_TARGETDIR%/}" # strip trailing slash
+				OPTION_TARGETDIR="$(printf '%s' "${OPTION_TARGETDIR}" | sed 's,/$,,')" # strip trailing slash
 			fi
 			# don't forget to update the interactive check if you change something here!
 			if [ ! -d "${OPTION_TARGETDIR}" ]
 			then
-				OPTION_TARGETDIR=""
-				echo "-t: invalid value, ignoring it." 1>&2
+				OPTION_TARGETDIR=''
+				printf '%s' '-'
+				printf '%s: invalid value, ignoring it.' "${OPTION}" 1>&2
 			fi
 			if [ -d "${OPTION_TARGETDIR}/${OPTION_NEWMODNAME}" ] &&
-			   [ "${OPTION_NEWMODNAME}" != "" ]
+			   [ -n "${OPTION_NEWMODNAME}" ]
 			then
-				OPTION_TARGETDIR=""
-				echo "-t: invalid value, ignoring it." 1>&2
+				OPTION_TARGETDIR=''
+				printf '%s' '-'
+				printf '%s: invalid value, ignoring it.' "${OPTION}" 1>&2
 			fi
 			;;
 
 		# DVCS repository hosting service
-		"s")
-			OPTION_REPOHOSTINGSERVICE=${OPTARG}
-			if [ "${OPTION_REPOHOSTINGSERVICE}" != "bitbucket" ] &&
-			   [ "${OPTION_REPOHOSTINGSERVICE}" != "github" ]
+		's')
+			OPTION_REPOHOSTINGSERVICE="${OPTARG}"
+			if [ "${OPTION_REPOHOSTINGSERVICE}" != 'bitbucket' ] &&
+			   [ "${OPTION_REPOHOSTINGSERVICE}" != 'github' ]
 			then
-				OPTION_REPOHOSTINGSERVICE=""
-				echo "-s: invalid value, ignoring it." 1>&2
+				OPTION_REPOHOSTINGSERVICE=''
+				printf '%s' '-'
+				printf '%s: invalid value, ignoring it.' "${OPTION}" 1>&2
 			fi
 			;;
 
 		# DVCS repository hosting service: username
-		"u")
-			OPTION_REPOHOSTINGSERVICEUSERNAME=${OPTARG}
+		'u')
+			OPTION_REPOHOSTINGSERVICEUSERNAME="${OPTARG}"
 			;;
 
 		# DVCS repository hosting service: password belonging to the username
-		"p")
-			OPTION_REPOHOSTINGSERVICEPWD=${OPTARG}
+		'p')
+			OPTION_REPOHOSTINGSERVICEPWD="${OPTARG}"
 			;;
 
 		# DVCS repository hosting service: organization
-		"o")
-			OPTION_REPOHOSTINGSERVICEORGANIZATION=${OPTARG}
-			if [[ ! "${OPTION_REPOHOSTINGSERVICEORGANIZATION}" =~ ^[a-zA-Z][a-zA-Z0-9\-]*$ ]] # don't forget to update the interactive check if you change something here!
+		'o')
+			OPTION_REPOHOSTINGSERVICEORGANIZATION="${OPTARG}"
+			if ! printf '%s' "${OPTION_REPOHOSTINGSERVICEORGANIZATION}" | grep -E -q -e '^[a-zA-Z][a-zA-Z0-9\-]*$' # don't forget to update the interactive check if you change something here!
 			then
-				OPTION_REPOHOSTINGSERVICEORGANIZATION=""
-				echo "-o: invalid value, ignoring it." 1>&2
+				OPTION_REPOHOSTINGSERVICEORGANIZATION=''
+				printf '%s' '-'
+				printf '%s: invalid value, ignoring it.' "${OPTION}" 1>&2
 			fi
 			;;
 
 		# DVCS repository hosting service: name for the new project
-		"q")
-			OPTION_REPOHOSTINGSERVICEPROJECTNAME=${OPTARG}
-			if [[ ! "${OPTION_REPOHOSTINGSERVICEPROJECTNAME}" =~ ^[a-zA-Z0-9_\-]*$ ]] # don't forget to update the interactive check if you change something here!
+		'q')
+			OPTION_REPOHOSTINGSERVICEPROJECTNAME="${OPTARG}"
+			if ! printf '%s' "${OPTION_REPOHOSTINGSERVICEPROJECTNAME}" | grep -E -q -e '^[a-zA-Z0-9_\-]*$' # don't forget to update the interactive check if you change something here!
 			then
-				OPTION_REPOHOSTINGSERVICEPROJECTNAME=""
-				echo "-q: invalid value, ignoring it." 1>&2
+				OPTION_REPOHOSTINGSERVICEPROJECTNAME=''
+				printf '%s' '-'
+				printf '%s: invalid value, ignoring it.' "${OPTION}" 1>&2
 			fi
 			;;
 
 		# DVCS repository hosting service: access setting for the new project
-		"r")
-			OPTION_REPOHOSTINGSERVICEREPOACCESS=${OPTARG}
-			if [ "${OPTION_REPOHOSTINGSERVICEREPOACCESS}" != "public" ] &&
-			   [ "${OPTION_REPOHOSTINGSERVICEREPOACCESS}" != "private" ]
+		'r')
+			OPTION_REPOHOSTINGSERVICEREPOACCESS="${OPTARG}"
+			if [ "${OPTION_REPOHOSTINGSERVICEREPOACCESS}" != 'public' ] &&
+			   [ "${OPTION_REPOHOSTINGSERVICEREPOACCESS}" != 'private' ]
 			then
-				OPTION_REPOHOSTINGSERVICEREPOACCESS=""
-				echo "-r: invalid value, ignoring it." 1>&2
+				OPTION_REPOHOSTINGSERVICEREPOACCESS=''
+				printf '%s' '-'
+				printf '%s: invalid value, ignoring it.' "${OPTION}" 1>&2
 			fi
 			;;
 
 		# show help
-		"h"|"?")
-			FILENAME=$(basename "${0}")
-			echo    ""
-			echo -e "\033[1mSYNOPSIS\033[0m"
-			echo    "  ${FILENAME} [-a author] [-b boilerplate] [-n modname] [-t /targetdir]"
-			echo    "  [-e author@example.com] [-h|-?]"
-			echo    ""
-			echo    ""
-			echo -e "\033[1mOPTIONS\033[0m"
-			echo    ""
-			echo -e "  \033[1m-a\033[0m"
-			echo    "    Author name, used for the source code author information of the new module."
-			echo    ""
-			echo -e "  \033[1m-b\033[0m"
-			echo    "    Boilerplate to use (full name, e.g. \"application\")."
-			echo    ""
-			echo -e "  \033[1m-e\033[0m"
-			echo    "    Email address of the author, used for the source code author information"
-			echo    "    of the new module."
-			echo    ""
-			echo -e "  \033[1m-n\033[0m"
-			echo    "    Name of the new module. Please note that module names are restricted to"
-			echo    "    lowercase alphanumeric characters and underscores, and should begin with"
-			echo    "    a lowercase letter."
-			echo    ""
-			echo -e "  \033[1m-t\033[0m"
-			echo    "    Target directory in which the module shall be copied."
-			echo    ""
-			echo -e "  \033[1m-s\033[0m"
-			echo    "     DVCS repository wizard: Repository hosting service to use. Available:"
-			echo    "     bitbucket, github"
-			echo    ""
-			echo -e "  \033[1m-u\033[0m"
-			echo    "    DVCS repository wizard: your username on the repository hosting service"
-			echo    "    of choice."
-			echo    ""
-			echo -e "  \033[1m-p\033[0m"
-			echo    "     DVCS repository wizard: your password belonging to the username on"
-			echo    "     the repository hosting service of choice."
-			echo    "     ATTENTION: Do not use this on multi-user machines! Your password may be"
-			echo    "                listed in the terminal history, current processes listing, ..."
-			echo    ""
-			echo -e "  \033[1m-o\033[0m"
-			echo    "     DVCS repository wizard: Most services provide some kind of multi-user"
-			echo    "     feature. You can use this option if you want to create the repository"
-			echo    "     in such a multi-user-organization/team account instead of putting the"
-			echo    "     repository in your personal account. Just submit the name of it by using"
-			echo    "     this option. Supported right now:"
-			echo    "     - GitHub organizations"
-			echo    "     - Bitbucket teams"
-			echo    ""
-			echo -e "  \033[1m-q\033[0m"
-			echo    "    DVCS repository wizard: Project name to user for the new repository on"
-			echo    "    the repository hosting service of choice."
-			echo    ""
-			echo -e "  \033[1m-r\033[0m"
-			echo    "     DVCS repository wizard: access setting for the new project on the"
-			echo    "     repository hosting service. Available: public, private"
-			echo    ""
-			echo -e "  \033[1m-h|?\033[0m"
-			echo    "    Print this help."
-			echo    ""
-			echo    ""
-			echo -e "\033[1mUSAGE\033[0m"
-			echo    ""
-			echo    "  Just call this program and follow the instructions. Every value this program"
-			echo    "  is asking for can be defined as parameter (see listing above). So it is able"
-			echo    "  to work without user interaction if all needed values are specified. Invalid"
-			echo    "  values will be ignored and the user will be asked for a valid value instead."
-			echo    ""
-			echo    ""
-			echo -e "\033[1mENVIRONMENT VARIABLES\033[0m"
-			echo    ""
-			echo    "  This program uses the following environment variables:"
-			echo    ""
-			echo -e "       \033[4mPUPPET_BOILERPLATE_AUTHORFULLNAME\033[0m"
-			echo    "           Allows the specification of a default value for the author's name."
-			echo -e "           This var's value will be ignored if \033[1m-a\033[0m is set."
-			echo    ""
-			echo -e "       \033[4mPUPPET_BOILERPLATE_AUTHOREMAIL\033[0m"
-			echo    "           Allows the specification of a default value for the author's email"
-			echo -e "           address. This var's value will be ignored if \033[1m-e\033[0m is set."
-			echo    ""
+		'h')
+			if ! hash groff > /dev/null 2>&1
+			then
+				printf 'groff is missing, can'\''t display help.\n' 1>&2
+				exit 1
+			fi
+			FILENAME="$(basename "${0}")"
+			# Helpful links about writing and formatting man pages:
+			# http://j.mp/L3TcXQ http://j.mp/2buoDa http://j.mp/VNhL5g
+			MANPAGE="$(cat << EOF
+.TH ${FILENAME} 1
+.SH NAME
+${FILENAME} \- Tool to create Puppet modules skeletons.
+
+.SH SYNOPSIS
+.B ${FILENAME}
+.PP
+.BI "[\-a " "author-name" "]"
+.BI "[\-b " "boilerplate" "]"
+.BI "[\-e " "author-email" "]"
+.B [\-h]
+.BI "[\-n " "module-name" "]"
+.BI "[\-t " "target-dir" "]"
+.BI "[\-s " "repo-service" "]"
+.BI "[\-u " "repo-service-user" "]"
+.BI "[\-p " "repo-service-pwd" "]"
+.BI "[\-o " "repo-service-org" "]"
+.BI "[\-q " "repo-service-project" "]"
+.BI "[\-q " "repo-service-access" "]"
+
+.SH DESCRIPTION
+Just call this program and follow the instructions. Every value this program
+is asking for can be defined as parameter. So it is able to work without user
+interaction if all needed values are specified. Invalid values will be ignored
+and the user will be asked for a valid value instead.
+
+.SH OPTIONS
+.TP
+.B \-a
+Author name, used for the source code author information of the new module.
+.TP
+.B \-b
+Boilerplate to use (full name, e.g. "application").
+.TP
+.B \-e
+Email address of the author, used for the source code author information of the
+new module.
+.TP
+.B \-h
+Print this help.
+.TP
+.B \-n
+Name of the new module. Please note that module names are restricted to
+lowercase alphanumeric characters and underscores, and should begin with a
+lowercase letter.
+.TP
+.B \-t
+Target directory in which the module shall be copied.
+.TP
+.B \-s
+DVCS repository wizard: Repository hosting service to use. Available: bitbucket,
+github.
+.TP
+.B \-u
+DVCS repository wizard: your username on the repository hosting service of
+choice.
+.TP
+.B \-p
+DVCS repository wizard: your password belonging to the username on
+the repository hosting service of choice.
+.B ATTENTION:
+Do not use this parameter on multi-user machines! Your password may be listed in
+the terminal history, current processes listing, ...
+.TP
+.B \-o
+DVCS repository wizard: Most services provide some kind of multi-user feature
+(currently supported: GitHub organizations, Bitbucket teams). You can use this
+option if you want to create the repository in such a
+multi-user-organization/team account instead of putting the repository in your
+personal account. Just submit the name of it by using this option. Use "none"
+or "false" as value if there is no organization/team to use. The new repository
+will be created in your personal account then.
+.TP
+.B \-q
+DVCS repository wizard: Project name to use for the new repository on the
+repository hosting service of choice.
+.TP
+.B \-r
+DVCS repository wizard: access setting for the new project on the repository
+hosting service. Available: public, private
+
+.SH ENVIRONMENT VARIABLES
+This program uses the following environment variables:
+.TP
+.B PUPPET_BOILERPLATE_AUTHORFULLNAME
+Allows the specification of a default value for the author's name. This var's
+value will be ignored if
+.B \-a
+is set.
+.TP
+.B PUPPET_BOILERPLATE_AUTHOREMAIL
+Allows the specification of a default value for the author's email address. This
+var's value will be ignored if
+.B \-e
+is set.
+
+.SH EXIT STATUS
+This script returns a zero exist status if it succeeds. Non zero is returned in
+case of failure.
+
+.SH AUTHOR
+Andreas Haerter <ah@syn-systems.com>
+EOF
+)"
+			printf '%s\n' "${MANPAGE}" | groff -Tascii -man | more
 			unset FILENAME
+			unset MANPAGE
 			exit 0
 			;;
 
 		# unknown/not supported -> kill script and inform user
 		*)
-			echo "unknown option '${OPTARG}'. Use '-h' or '-?' to get usage instructions." 1>&2
+			printf 'unknown option "%s". Use "-h" to get usage instructions.' "${OPTARG}" 1>&2
 			exit 1
 			;;
 	esac
 done
-unset OPTIND
 unset OPTION
 
 
@@ -1436,19 +1489,25 @@ set -u # prevent usage of uninitialized variables
 
 #### welcome user
 clear
-echo "###############################################################################"
-echo "# Puppet module creator"
-echo "###############################################################################"
+printf '###############################################################################\n'
+printf '# Puppet module creator\n'
+printf '###############################################################################\n'
 
 
-#### check config
+#### check config and environment
 if [ ! -d "${DIR_BOILERPLATES}" ]
 then
-	echo "" 1>&2
-	echo "Could not access the boilerplate directory:" 1>&2
-	echo "${DIR_BOILERPLATES}" 1>&2
+	printf '\n' 1>&2
+	printf 'Could not access the boilerplate directory:\n' 1>&2
+	printf '%s\n' "${DIR_BOILERPLATES}" 1>&2
 	exit 1
 fi
+if ! hash rsync > /dev/null 2>&1
+then
+	printf 'rsync is missing, please install it.\n' 1>&2
+	exit 1
+fi
+
 
 
 #### start data wizard
@@ -1456,40 +1515,40 @@ wizard_start
 
 
 #### copy
-echo ""
-echo -e "\033[1mCopying boilerplate sources...\033[0m"
+printf '\n'
+printf '\033[1mCopying boilerplate sources...\033[0m\n'
 mkdir -p "${TARGETDIR}" > /dev/null 2>&1
 if [ $? -ne 0 ]
 then
-	echo "Could not create '${TARGETDIR}'." 1>&2
+	printf 'Could not create "%s".\n' "${TARGETDIR}" 1>&2
 	exit 1
 fi
-echo "'${SOURCEDIR}' -> '${TARGETDIR}'"
-rsync --verbose --recursive --whole-file --exclude="DESCRIPTION" --exclude=".git" --exclude=".gitignore" --exclude=".gitattributes" --exclude=".hg" "${SOURCEDIR}/." "${TARGETDIR}/."
+printf '"%s" -> "%s"\n' "${SOURCEDIR}" "${TARGETDIR}"
+rsync --verbose --recursive --whole-file --exclude='DESCRIPTION' --exclude='.git' --exclude='.gitignore' --exclude='.gitattributes' --exclude='.hg' "${SOURCEDIR}/." "${TARGETDIR}/."
 if [ $? -ne 0 ]
 then
-	echo "Copying to '${TARGETDIR}' failed." 1>&2
+	printf 'Copying to "%s" failed.\n' "${TARGETDIR}" 1>&2
 	exit 1
 else
-	echo -e "\033[32mDone.\033[0m"
+	printf '\033[32mDone.\033[0m\n'
 fi
 
 
 #### rename directories
-echo ""
-echo -e "\033[1mRenaming directories...\033[0m"
-TOUCHED=false
-IFS_SAVE=${IFS} # copy current IFS (Internal Field Separator)
-IFS=$'\n'
-for RESOURCE in $(find "${TARGETDIR}" -type d -not -name "\.git" -not -name "\.hg" | grep "${STR_PLACEHOLDER_BOILERPLATE}" | sort)
+printf '\n'
+printf '\033[1mRenaming directories...\033[0m\n'
+TOUCHED='0'
+IFS_SAVE="${IFS}" # copy current IFS (Internal Field Separator)
+IFS="$(printf '\n+')"
+for RESOURCE in $(find "${TARGETDIR}" -type d -not -name '\.git' -not -name '\.hg' | grep -F -e "${STR_PLACEHOLDER_BOILERPLATE}" | sort)
 do
 	# get some data
-	RESOURCE_DIR=$(dirname ${RESOURCE})
-	RESOURCE_OLDNAME=$(basename ${RESOURCE})
-	RESOURCE_NEWNAME=${RESOURCE_OLDNAME/${STR_PLACEHOLDER_BOILERPLATE}/${NEWMODNAME}}
+	RESOURCE_DIR="$(dirname "${RESOURCE}")"
+	RESOURCE_OLDNAME="$(basename "${RESOURCE}")"
+	RESOURCE_NEWNAME="$(printf '%s' "${RESOURCE_OLDNAME}" | sed -e "s/${STR_PLACEHOLDER_BOILERPLATE}/${NEWMODNAME}/g")"
 
 	# jump to next one if only the path (but not the dir/file itself) matched
-	if [ "${RESOURCE_OLDNAME}" == "${RESOURCE_NEWNAME}" ]
+	if [ "${RESOURCE_OLDNAME}" = "${RESOURCE_NEWNAME}" ]
 	then
 		continue 1
 	fi
@@ -1498,43 +1557,41 @@ do
 	mv -i -v "${RESOURCE_DIR}/${RESOURCE_OLDNAME}" "${RESOURCE_DIR}/${RESOURCE_NEWNAME}"
 	if [ $? -ne 0 ]
 	then
-		echo "Renaming '${RESOURCE}' failed." 1>&2
+		printf 'Renaming "%s" failed.\n' "${RESOURCE}" 1>&2
 		exit 1
 	fi
-	TOUCHED=true
+	TOUCHED='1'
 
-	# clean up
 	unset RESOURCE_DIR
 	unset RESOURCE_OLDNAME
 	unset RESOURCE_NEWNAME
 done
-if [ ${TOUCHED} == false ]
+if [ "${TOUCHED}" -ne 1 ]
 then
-	echo "Nothing to rename, no dirname contains '${STR_PLACEHOLDER_BOILERPLATE}'".
+	printf 'Nothing to rename, no dirname contains "%s".\n' "${STR_PLACEHOLDER_BOILERPLATE}"
 fi
-echo -e "\033[32mDone.\033[0m"
-# clean up
-IFS=${IFS_SAVE} # restore IFS (Internal Field Separator)
+printf '\033[32mDone.\033[0m\n'
+IFS="${IFS_SAVE}" # restore IFS (Internal Field Separator)
 unset IFS_SAVE
 unset RESOURCE
 unset TOUCHED
 
 
 #### rename files
-echo ""
-echo -e "\033[1mRenaming files...\033[0m"
-TOUCHED=false
-IFS_SAVE=${IFS} # copy current IFS (Internal Field Separator)
-IFS=$'\n'
-for RESOURCE in $(find "${TARGETDIR}" -type f -not -wholename "*\/\.git\/*" -not -wholename "*\/\.hg\/*" | grep "${STR_PLACEHOLDER_BOILERPLATE}" | sort)
+printf '\n'
+printf '\033[1mRenaming files...\033[0m\n'
+TOUCHED='0'
+IFS_SAVE="${IFS}" # copy current IFS (Internal Field Separator)
+IFS="$(printf '\n+')"
+for RESOURCE in $(find "${TARGETDIR}" -type f -not -wholename '*\/\.git\/*' -not -wholename '*\/\.hg\/*' | grep -F -e "${STR_PLACEHOLDER_BOILERPLATE}" | sort)
 do
 	# get some data
-	RESOURCE_DIR=$(dirname ${RESOURCE})
-	RESOURCE_OLDNAME=$(basename ${RESOURCE})
-	RESOURCE_NEWNAME=${RESOURCE_OLDNAME/${STR_PLACEHOLDER_BOILERPLATE}/${NEWMODNAME}}
+	RESOURCE_DIR="$(dirname ${RESOURCE})"
+	RESOURCE_OLDNAME="$(basename ${RESOURCE})"
+	RESOURCE_NEWNAME="$(printf '%s' "${RESOURCE_OLDNAME}" | sed -e "s/${STR_PLACEHOLDER_BOILERPLATE}/${NEWMODNAME}/g")"
 
 	# jump to next one if only the path (but not the dir/file itself) matched
-	if [ "${RESOURCE_OLDNAME}" == "${RESOURCE_NEWNAME}" ]
+	if [ "${RESOURCE_OLDNAME}" = "${RESOURCE_NEWNAME}" ]
 	then
 		continue 1
 	fi
@@ -1543,23 +1600,21 @@ do
 	mv -i -v "${RESOURCE_DIR}/${RESOURCE_OLDNAME}" "${RESOURCE_DIR}/${RESOURCE_NEWNAME}"
 	if [ $? -ne 0 ]
 	then
-		echo "Renaming '${RESOURCE}' failed." 1>&2
+		printf 'Renaming "%s" failed.\n' "${RESOURCE}" 1>&2
 		exit 1
 	fi
-	TOUCHED=true
+	TOUCHED='1'
 
-	# clean up
 	unset RESOURCE_DIR
 	unset RESOURCE_OLDNAME
 	unset RESOURCE_NEWNAME
 done
-if [ ${TOUCHED} == false ]
+if [ "${TOUCHED}" -ne 1 ]
 then
-	echo "Nothing to rename, no filename contains '${STR_PLACEHOLDER_BOILERPLATE}'".
+	printf 'Nothing to rename, no filename contains "%s".\n' "${STR_PLACEHOLDER_BOILERPLATE}"
 fi
-echo -e "\033[32mDone.\033[0m"
-# clean up
-IFS=${IFS_SAVE} # restore IFS (Internal Field Separator)
+printf '\033[32mDone.\033[0m\n'
+IFS="${IFS_SAVE}" # restore IFS (Internal Field Separator)
 unset IFS_SAVE
 unset RESOURCE
 unset TOUCHED
@@ -1567,75 +1622,85 @@ unset TOUCHED
 
 #### replacing file contents
 # modulename
-echo ""
-str_rreplace "${STR_PLACEHOLDER_BOILERPLATE}" "${NEWMODNAME}" "${TARGETDIR}" true
+printf '\n'
+str_rreplace "${STR_PLACEHOLDER_BOILERPLATE}" "${NEWMODNAME}" "${TARGETDIR}" '1'
 # author name
-echo ""
-str_rreplace "${STR_PLACEHOLDER_AUTHORFULLNAME}" "${AUTHORFULLNAME}" "${TARGETDIR}" true
+printf '\n'
+str_rreplace "${STR_PLACEHOLDER_AUTHORFULLNAME}" "${AUTHORFULLNAME}" "${TARGETDIR}" '1'
 # author email address
-echo ""
-str_rreplace "${STR_PLACEHOLDER_AUTHOREMAIL}" "${AUTHOREMAIL}" "${TARGETDIR}" true
+printf '\n'
+str_rreplace "${STR_PLACEHOLDER_AUTHOREMAIL}" "${AUTHOREMAIL}" "${TARGETDIR}" '1'
 # year placeholder
-echo ""
-str_rreplace "${STR_PLACEHOLDER_CURRENTYEAR}" "$(date +'%Y')" "${TARGETDIR}" true
+printf '\n'
+str_rreplace "${STR_PLACEHOLDER_CURRENTYEAR}" "$(date +'%Y')" "${TARGETDIR}" '1'
 
 
 #### user information
-echo ""
-echo -e "\033[32mThe new module was created successfully.\033[0m"
-echo ""
-echo ""
-echo -e "Start to edit the following files (-> positions marked with '\033[1m${STR_PLACEHOLDER_FIXME}\033[0m')"
-echo "for customization:"
-IFS_SAVE=${IFS} # copy current IFS (Internal Field Separator)
-IFS=$'\n'
+printf '\n'
+printf '\033[32mThe new module was created successfully.\033[0m\n'
+printf '\n'
+printf '\n'
+printf 'Start to edit the following files (-> positions marked with "\033[1m%s\033[0m")\n' "${STR_PLACEHOLDER_FIXME}"
+printf 'for customization:\n'
+IFS_SAVE="${IFS}" # copy current IFS (Internal Field Separator)
+IFS="$(printf '\n+')"
 for RESOURCE in $(grep -R "${STR_PLACEHOLDER_FIXME}" "${TARGETDIR}" | cut -d ":" -f 1 -s | sort | uniq)
 do
-	echo "- ${RESOURCE}"
+	printf '%s' '- '
+	printf '%s\n' "${RESOURCE}"
 done
-IFS=${IFS_SAVE} # restore IFS (Internal Field Separator)
-# clean up
-IFS=${IFS_SAVE} # restore IFS (Internal Field Separator)
+IFS="${IFS_SAVE}" # restore IFS (Internal Field Separator)
 unset IFS_SAVE
 unset RESOURCE
-echo ""
-echo -e "\033[1mBasic work is done, you can start to edit and use the new module now. :-)\033[0m"
+printf '\n'
+printf '\033[1mBasic work is done, you can start to edit and use the new module now. :-)\033[0m\n'
 
 
 
 ##### DVCS repository
-echo ""
-echo "This program is able to create a new project for your Puppet module on some"
-echo "DVCS hosting services. Currently supported:"
-echo "  - Git repository on GitHub (including GitHub organizations)"
-echo "  - Git repository on Bitbucket (including Bitbucket teams)"
-echo ""
-echo -n "Start repository hosting service wizard? [y|n]: "
-read INPUT
-if [ ! "${INPUT}" == "y" ] &&
-   [ ! "${INPUT}" == "Y" ] &&
-   [ ! "${INPUT}" == "j" ] &&
-   [ ! "${INPUT}" == "J" ]
+printf '\n'
+printf '\n'
+printf 'This program is able to create a new project for your Puppet module on some\n'
+printf 'DVCS hosting services. Currently supported:\n'
+printf '  - Git repository on GitHub (including GitHub organizations)\n'
+printf '  - Git repository on Bitbucket (including Bitbucket teams)\n'
+printf '\n'
+
+# Ask user if he wants to start the wizard (unless everything was set by parameters)
+if [ -z "${OPTION_REPOHOSTINGSERVICE}" ] ||
+   [ -z "${OPTION_REPOHOSTINGSERVICEPROJECTNAME}" ] ||
+   [ -z "${OPTION_REPOHOSTINGSERVICEUSERNAME}" ] ||
+   [ -z "${OPTION_REPOHOSTINGSERVICEPWD}" ] ||
+   [ -z "${OPTION_REPOHOSTINGSERVICEORGANIZATION}" ] ||
+   [ -z "${OPTION_REPOHOSTINGSERVICEREPOACCESS}" ]
 then
-	echo ""
-	echo "Repository hosting wizard canceled by user. Have fun with your new Puppet"
-	echo "module."
-	echo ""
-	exit 0
+	printf 'Start repository hosting service wizard? [y|n]: '
+	read INPUT
+	if [ ! "${INPUT}" = 'y' ] &&
+	   [ ! "${INPUT}" = 'Y' ] &&
+	   [ ! "${INPUT}" = 'j' ] &&
+	   [ ! "${INPUT}" = 'J' ]
+	then
+		printf '\n'
+		printf 'Repository hosting wizard canceled by user. Have fun with your new Puppet\n'
+		printf 'module.\n'
+		printf '\n'
+		exit 0
+	fi
 fi
 
 hash curl > /dev/null 2>&1
 if [ $? -ne 0 ]
 then
-	echo "curl is missing. Please install it for the next time..." 1>&2
-	echo "However: have fun with your new Puppet module." 1>&2
+	printf 'curl is missing. Please install it for the next time...\n' 1>&2
+	printf 'However: have fun with your new Puppet module.\n' 1>&2
 	exit 1
 fi
 hash git > /dev/null 2>&1
 if [ $? -ne 0 ]
 then
-	echo "git is missing. Please install it for the next time..." 1>&2
-	echo "However: have fun with your new Puppet module." 1>&2
+	printf 'git is missing. Please install it for the next time...\n' 1>&2
+	printf 'However: have fun with your new Puppet module.\n' 1>&2
 	exit 1
 fi
 
@@ -1645,58 +1710,58 @@ repowizard_start
 
 
 #### create remote project on repository hosting service
-REMOTECREATE_SUCCESS=false #init
-while [ ${REMOTECREATE_SUCCESS} == false ]
+REMOTECREATE_SUCCESS='0'
+while [ "${REMOTECREATE_SUCCESS}" -ne 1 ]
 do
-	if [ "${REPOHOSTINGSERVICE}" == "github" ]
+	if [ "${REPOHOSTINGSERVICE}" = 'github' ]
 	then
 		github_createrepo
 		if [ $? -eq 0 ]
 		then
-			REMOTECREATE_SUCCESS=true
+			REMOTECREATE_SUCCESS='1'
 		fi
-	elif [ "${REPOHOSTINGSERVICE}" == "bitbucket" ]
+	elif [ "${REPOHOSTINGSERVICE}" = 'bitbucket' ]
 	then
 		bitbucket_createrepo
 		if [ $? -eq 0 ]
 		then
-			REMOTECREATE_SUCCESS=true
+			REMOTECREATE_SUCCESS='1'
 		fi
 	else
-		echo "'${REPOHOSTINGSERVICE}' is an unknown service." 1>&2
+		printf '"%s" is an unknown service.\n' "${REPOHOSTINGSERVICE}" 1>&2
 		exit 1
 	fi
 
-	if [ ${REMOTECREATE_SUCCESS} == false ]
+	if [ "${REMOTECREATE_SUCCESS}" -ne 1 ]
 	then
-		RETRY="n" #init
-		echo -n "Retry? [y|n]: "
+		RETRY='n'
+		printf 'Retry? [y|n]: '
 		read RETRY
-		if [ "${RETRY}" == "y" ] ||
-		   [ "${RETRY}" == "Y" ] ||
-		   [ "${RETRY}" == "j" ] ||
-		   [ "${RETRY}" == "J" ]
+		if [ "${RETRY}" = 'y' ] ||
+		   [ "${RETRY}" = 'Y' ] ||
+		   [ "${RETRY}" = 'j' ] ||
+		   [ "${RETRY}" = 'J' ]
 		then
 			continue 1
 		fi
 		unset RETRY
 
-		RESTARTWIZARD="n" #init
-		echo -n "Restart DVCS wizard? (e.g. correct wrong data, retry afterwards) [y|n]: "
+		RESTARTWIZARD="n"
+		printf 'Restart DVCS wizard? (e.g. correct wrong data, retry afterwards) [y|n]: '
 		read RESTARTWIZARD
-		if [ "${RESTARTWIZARD}" == "y" ] ||
-		   [ "${RESTARTWIZARD}" == "Y" ] ||
-		   [ "${RESTARTWIZARD}" == "j" ] ||
-		   [ "${RESTARTWIZARD}" == "J" ]
+		if [ "${RESTARTWIZARD}" = 'y' ] ||
+		   [ "${RESTARTWIZARD}" = 'Y' ] ||
+		   [ "${RESTARTWIZARD}" = 'j' ] ||
+		   [ "${RESTARTWIZARD}" = 'J' ]
 		then
 			repowizard_start
 			continue 1
 		else
-			echo ""
-			echo "Repository creation canceled by user. However, have fun with your new"
-			echo "Puppet module (nothing was modified by the DVCS wizard there, no need"
-			echo "to restart the whole module creation)."
-			echo ""
+			printf '\n'
+			printf 'Repository creation canceled by user. However, have fun with your new\n'
+			printf 'Puppet module (nothing was modified by the DVCS wizard there, no need\n'
+			printf 'to restart the whole module creation).\n'
+			printf '\n'
 			exit 0
 		fi
 		unset RESTARTWIZARD
@@ -1705,26 +1770,26 @@ done
 
 
 #### create local repository
-echo ""
-echo "Creating local git repository in '${TARGETDIR}'"
+printf '\n'
+printf 'Creating local git repository in "%s"\n' "${TARGETDIR}"
 git init "${TARGETDIR}" > /dev/null 2>&1 #note: running git init in an existing repository is safe.
 if [ $? -ne 0 ]
 then
-	echo "'git init' failed for '${TARGETDIR}'!" 1>&2
-	echo "However, your new Puppet module should be OK. Just create the repository" 1>&2
-	echo "by hand. Or delete everything and re-start the module creation." 1>&2
-	echo ""
+	printf '"git init" failed for "%s"!\n' "${TARGETDIR}" 1>&2
+	printf 'However, your new Puppet module should be OK. Just create the repository\n' 1>&2
+	printf 'by hand. Alternatively, delete everything and re-start the module creation.\n' 1>&2
+	printf '\n'
 	exit 1
 fi
-echo -e "\033[32mDone.\033[0m"
+printf '\033[32mDone.\033[0m\n'
 
 
 #### add git remote
-echo ""
-if [ "${REPOHOSTINGSERVICE}" == "github" ]
+printf '\n'
+if [ "${REPOHOSTINGSERVICE}" = 'github' ]
 then
-	echo "Adding GitHub repository as git remote origin..."
-	if [ "${REPOHOSTINGSERVICEORGANIZATION}" == "" ]
+	printf 'Adding GitHub repository as git remote origin...\n'
+	if [ -z "${REPOHOSTINGSERVICEORGANIZATION}" ]
 	then
 		git --git-dir="${TARGETDIR}/.git" --work-tree="${TARGETDIR}" remote add origin "git@github.com:${REPOHOSTINGSERVICEUSERNAME}/${REPOHOSTINGSERVICEPROJECTNAME}.git" > /dev/null 2>&1
 	else
@@ -1732,18 +1797,18 @@ then
 	fi
 	if [ $? -ne 0 ]
 	then
-		echo "'git remote add origin' failed for '${TARGETDIR}'!" 1>&2
-		echo "However, your new Puppet module should be OK. Just configure git remote" 1>&2
-		echo "by hand. Or delete everything and re-start the module creation." 1>&2
-		echo ""
+		printf '"git remote add origin" failed for "%s"!\n' "${TARGETDIR}" 1>&2
+		printf 'However, your new Puppet module should be OK. Just configure git remote\n' 1>&2
+		printf 'by hand. Alternatively, delete everything and re-start the module creation.\n' 1>&2
+		printf '\n'
 		exit 1
 	fi
-	echo "You may want to use 'git push -u origin master' after your first commit."
-	echo -e "\033[32mDone.\033[0m"
-elif [ "${REPOHOSTINGSERVICE}" == "bitbucket" ]
+	printf 'You may want to use "git push -u origin master" after your first commit.\n'
+	printf '\033[32mDone.\033[0m\n'
+elif [ "${REPOHOSTINGSERVICE}" = 'bitbucket' ]
 then
-	echo "Adding Bitbucket repository as git remote origin..."
-	if [ "${REPOHOSTINGSERVICEORGANIZATION}" == "" ]
+	printf 'Adding Bitbucket repository as git remote origin...\n'
+	if [ -z "${REPOHOSTINGSERVICEORGANIZATION}" ]
 	then
 		git --git-dir="${TARGETDIR}/.git" --work-tree="${TARGETDIR}" remote add origin "git@bitbucket.org:${REPOHOSTINGSERVICEUSERNAME}/${REPOHOSTINGSERVICEPROJECTNAME}.git" > /dev/null 2>&1
 	else
@@ -1751,22 +1816,22 @@ then
 	fi
 	if [ $? -ne 0 ]
 	then
-		echo "'git remote add origin' failed for '${TARGETDIR}'!" 1>&2
-		echo "However, your new Puppet module should be OK. Just configure git remote" 1>&2
-		echo "by hand. Or delete everything and re-start the module creation." 1>&2
-		echo ""
+		printf '"git remote add origin" failed for "%s"!\n' "${TARGETDIR}" 1>&2
+		printf 'However, your new Puppet module should be OK. Just configure git remote\n' 1>&2
+		printf 'by hand. Alternatively, delete everything and re-start the module creation.\n' 1>&2
+		printf '\n'
 		exit 1
 	fi
-	echo "You may want to use 'git push -u origin master' after your first commit."
-	echo -e "\033[32mDone.\033[0m"
+	printf 'You may want to use "git push -u origin master" after your first commit.\n'
+	printf '\033[32mDone.\033[0m\n'
 else
-	echo "'${REPOHOSTINGSERVICE}' is an unknown service." 1>&2
+	printf '"%s" is an unknown service.\n' "${REPOHOSTINGSERVICE}" 1>&2
 	exit 1
 fi
 
 
-echo ""
-echo -e "\033[1mThe ${REPOHOSTINGSERVICE} project and the local repository were created successfully.\033[0m"
-echo ""
+printf '\n'
+printf '\033[1mThe %s project and the local repository were created successfully.\033[0m\n' "${REPOHOSTINGSERVICE}"
+printf '\n'
 exit 0
 
